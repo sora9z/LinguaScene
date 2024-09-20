@@ -11,8 +11,9 @@ class _SignupScreenState extends State<SignupScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
   final _phoneNumberController = TextEditingController();
-  final _usernameController = TextEditingController();
   final _apiService = ApiService();
 
   void _signup() async {
@@ -35,10 +36,12 @@ class _SignupScreenState extends State<SignupScreen> {
 
     try {
       final result = await _apiService.signup(
-          _emailController.text,
-          _passwordController.text,
-          _phoneNumberController.text,
-          _usernameController.text);
+        _emailController.text,
+        _passwordController.text,
+        _firstNameController.text,
+        _lastNameController.text,
+        _phoneNumberController.text,
+      );
 
       print('Signup success: $result');
       Navigator.pop(context);
@@ -90,8 +93,15 @@ class _SignupScreenState extends State<SignupScreen> {
               height: 16,
             ),
             TextField(
-              controller: _usernameController,
-              decoration: const InputDecoration(labelText: 'user name'),
+              controller: _firstNameController,
+              decoration: const InputDecoration(labelText: 'first name'),
+            ),
+            const SizedBox(
+              height: 16,
+            ),
+            TextField(
+              controller: _lastNameController,
+              decoration: const InputDecoration(labelText: 'last name'),
             ),
             const SizedBox(
               height: 16,

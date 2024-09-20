@@ -1,3 +1,4 @@
+import 'package:client/screens/chat_list_screen.dart';
 import 'package:client/screens/signup_screen.dart';
 import 'package:client/services/api_service.dart';
 import 'package:flutter/material.dart';
@@ -17,11 +18,17 @@ class _LoginScreenState extends State<LoginScreen> {
   void _login() async {
     try {
       final result = await _apiService.login(
-          _emailController.text, _passwordController.text);
-      // TODO 로그인 성공 처리 (예: 홈 화면으로 이동)
+        _emailController.text,
+        _passwordController.text,
+      );
       print('로그인 성공: $result');
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const ChatListScreen(),
+        ),
+      );
     } catch (e) {
-      // TODO 로그인 실패 처리
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
