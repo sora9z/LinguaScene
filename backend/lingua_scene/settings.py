@@ -23,11 +23,11 @@ SECRET_KEY = env("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env('DEBUG')
 
-ALLOWED_HOSTS = []
-
+ALLOWED_HOSTS = ['*']
 
 # Application definition
 INSTALLED_APPS = [
+    "daphne", #  Daphne는 Django Channels와 함께 사용되는 ASGI 서버로, WebSocket 연결을 처리하는 데 필요
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     'rest_framework',
     'rest_framework_simplejwt',
+    "channels",
     "users",
     "chat",
     "message",
@@ -70,6 +71,9 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "lingua_scene.wsgi.application"
+# Daphne root routing을 지정
+ASGI_APPLICATION = "lingua_scene.asgi.application"
+# it will take control of the runserver command, replacing the standard Django development server with the ASGI compatible version.
 
 
 # Database
@@ -85,9 +89,6 @@ DATABASES = {
         "PORT": env("DB_PORT"),
     }
 }
-
-
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
@@ -111,7 +112,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
 
-LANGUAGE_CODE = "en-us"
+LANGUAGE_CODE = env.str("LANGUAGE_CODE", default="en-us")
 
 TIME_ZONE = "UTC"
 

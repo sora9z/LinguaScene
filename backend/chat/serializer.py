@@ -1,7 +1,7 @@
 
-from .models import ChatRoom
 from rest_framework import serializers
 
+from .models import ChatRoom
 
 class ChatRoomListSerializer(serializers.ModelSerializer):
     last_message = serializers.SerializerMethodField()  
@@ -15,7 +15,7 @@ class ChatRoomListSerializer(serializers.ModelSerializer):
     def get_last_message(self, obj):
         last_message = obj.messages.last()
         return last_message.content if last_message else None
-
+    
 class ChatRoomCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = ChatRoom

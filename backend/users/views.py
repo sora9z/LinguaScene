@@ -1,17 +1,17 @@
+import logging
 from rest_framework.permissions import AllowAny
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .serializers import LoginSerializer, SignupSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
-import logging
+
+from .serializers import LoginSerializer, SignupSerializer
 
 logger = logging.getLogger(__name__)
 
 class SignupView(APIView):
     permission_classes = [AllowAny]
     def post(self, request):
-        logger.debug(f"Request data: {request.data}")
         serializer = SignupSerializer(data=request.data)
 
         if serializer.is_valid():
@@ -28,7 +28,6 @@ class LoginView(APIView):
      serializer = LoginSerializer(data=request.data, context={'request': request})
 
      if serializer.is_valid():
-        print(serializer.validated_data)
         user = serializer.validated_data['user']
         
         # user 인증
@@ -37,6 +36,8 @@ class LoginView(APIView):
         if user is not None:
             # token 생성
             refresh = RefreshToken.for_user(user)
+            refresh['email'] = user.email
+
             return Response({
                 'refreshToken': str(refresh),
                 'accessToken': str(refresh.access_token),

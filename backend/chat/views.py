@@ -13,10 +13,7 @@ class ChatRoomListAPIView(APIView):
         chat_rooms = ChatRoom.objects.filter(user=request.user)
         serializer = ChatRoomListSerializer(chat_rooms, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
-   
-   
-
-
+    
 class ChatRoomCreateAPIView(APIView):
     def post(self,request):
         logger.debug(f"Request data: {request.data}")
@@ -30,7 +27,6 @@ class ChatRoomCreateAPIView(APIView):
         if serializer.is_valid():
             chat_room = serializer.save(user=request.user)
             logger.info(f"Chat room created successfully: {chat_room.id}")
-            print(serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         
         logger.error(f"Serializer errors: {serializer.errors}")

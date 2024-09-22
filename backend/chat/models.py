@@ -106,7 +106,6 @@ class ChatRoom(models.Model):
             GptMessage(role="user",content=user_message)
         ]
 
-
     def get_recommend_message(self)->str:
         level = self.level
 
