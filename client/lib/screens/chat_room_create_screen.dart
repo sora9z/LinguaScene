@@ -50,6 +50,7 @@ class _ChatRoomCreateScreenState extends State<ChatRoomCreateScreen> {
         'gpt_role': _gptRoleController.text,
       });
 
+      // 채팅방 화면으로 이동
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(

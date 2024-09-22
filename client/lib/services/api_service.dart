@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:client/models/chat_room.dart';
-import 'package:client/models/chat_room_list.dart';
 import 'package:client/services/http_header_builder.dart';
 import 'package:client/services/token_manager.dart';
 import 'package:http/http.dart' as http;
