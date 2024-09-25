@@ -15,6 +15,9 @@ For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
 
-## 수정 사항
+## TODO
 
-- 현재 채팅방의 메시지들이 공유되고 있음
+- 로그아웃
+- 로그인 연장
+- 테스트 코드 작성
+- 리팩토링

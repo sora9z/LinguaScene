@@ -25,7 +25,12 @@
   - output by voice(todo)
   - input by voice(todo)
 
-### 수정사항
+### TODO
 
 - socket disconnect 되면 채팅방 뒤로가기 안됨
-- 리팩토링 할 부분이 많음
+- 로그아웃
+- 로그인 연장
+- 테스트코드 작성
+- 추천 표현
+- 음성 출력
+- 리팩토링
