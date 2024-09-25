@@ -28,6 +28,15 @@ class _ChatListScreenState extends State<ChatListScreen> {
     }
   }
 
+  void _logout() async {
+    try {
+      await _apiService.logout();
+      Navigator.of(context).pushReplacementNamed('/login');
+    } catch (e) {
+      print('Failed to logout: $e');
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -56,6 +65,10 @@ class _ChatListScreenState extends State<ChatListScreen> {
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: _navigateToCreateChatRoom,
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: _logout,
           ),
         ],
       ),

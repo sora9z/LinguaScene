@@ -27,6 +27,6 @@ class ChatRoomProvider with ChangeNotifier {
   void addMessageToChatRoom(int? chatRoomId, String message, String type) {
     final chatRoom = _chatRooms.firstWhere((room) => room.id == chatRoomId);
     chatRoom.addMessage(Message(type: type, message: message));
-    notifyListeners(); // 상태 변경 알림
+    notifyListeners();
   }
 }

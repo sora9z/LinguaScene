@@ -113,4 +113,9 @@ class ApiService {
       throw Exception('Failed to load messages');
     }
   }
+
+  Future<void> logout() async {
+    final tokenManager = TokenManager();
+    await tokenManager.clearTokens();
+  }
 }

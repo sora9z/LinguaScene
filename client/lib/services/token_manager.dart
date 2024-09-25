@@ -24,7 +24,7 @@ class TokenManager {
     return prefs?.getString('refreshToken');
   }
 
-  Future<void> deleteTokens() async {
+  Future<void> clearTokens() async {
     await prefs?.remove('accessToken');
     await prefs?.remove('refreshToken');
   }
