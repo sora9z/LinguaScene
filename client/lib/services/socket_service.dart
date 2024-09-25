@@ -1,9 +1,7 @@
 import 'dart:convert';
 
-import 'package:client/providers/chat_room_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:web_socket_channel/io.dart';
-import 'package:web_socket_channel/status.dart' as status;
 
 class SocketService {
   IOWebSocketChannel? channel;
@@ -39,7 +37,8 @@ class SocketService {
 
   void closeConnection() {
     if (channel != null) {
-      channel?.sink.close(status.goingAway);
+      // channel?.sink.close(status.goingAway);
+      channel?.sink.close(1000);
       print('Disconnected from chat room $roomPk');
     }
   }

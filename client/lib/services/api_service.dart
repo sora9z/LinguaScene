@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:client/models/chat_room.dart';
+import 'package:client/models/message.dart';
 import 'package:client/services/http_header_builder.dart';
 import 'package:client/services/token_manager.dart';
 import 'package:http/http.dart' as http;
@@ -91,7 +92,25 @@ class ApiService {
       final data = ChatRoom.fromJson(jsonDecode(response.body));
       return data;
     } else {
-      throw Exception('새 채팅방 생성에 실패했습니다');
+      throw Exception('Failed to create chat room');
+    }
+  }
+
+  Future<List<Message>> fetchMessagesForChatRoom(int chatRoomId) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/message/messages/$chatRoomId/'),
+      headers: await HttpHeaderBuilder.buildHeaders(),
+    );
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body);
+      final result = data
+          .where((json) => json['role'] != 'system')
+          .map((json) => Message.fromJson(json))
+          .toList();
+      return result;
+    } else {
+      throw Exception('Failed to load messages');
     }
   }
 }

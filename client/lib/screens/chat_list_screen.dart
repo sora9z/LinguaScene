@@ -1,8 +1,10 @@
 import 'package:client/models/chat_room.dart';
+import 'package:client/providers/chat_room_provider.dart';
 import 'package:client/screens/chat_room_create_screen.dart';
 import 'package:client/screens/chat_room_screen.dart';
 import 'package:client/services/api_service.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class ChatListScreen extends StatefulWidget {
   const ChatListScreen({super.key});
@@ -13,13 +15,13 @@ class ChatListScreen extends StatefulWidget {
 
 class _ChatListScreenState extends State<ChatListScreen> {
   final ApiService _apiService = ApiService();
-  List<ChatRoom> _chatRooms = [];
 
   void _fetchChatRooms() async {
     try {
       List<ChatRoom> chatRooms = await _apiService.getChatRooms();
       setState(() {
-        _chatRooms = chatRooms;
+        Provider.of<ChatRoomProvider>(context, listen: false)
+            .setChatRooms(chatRooms);
       });
     } catch (e) {
       print('Failed to load chat rooms: $e');
@@ -49,6 +51,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Chat List'),
+        automaticallyImplyLeading: false, // 뒤로 가기 버튼 숨기기
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
@@ -57,9 +60,10 @@ class _ChatListScreenState extends State<ChatListScreen> {
         ],
       ),
       body: ListView.builder(
-        itemCount: _chatRooms.length,
+        itemCount: Provider.of<ChatRoomProvider>(context).chatRooms.length,
         itemBuilder: (context, index) {
-          final chatRoom = _chatRooms[index];
+          final chatRoom =
+              Provider.of<ChatRoomProvider>(context).chatRooms[index];
           return ListTile(
             title: Text(chatRoom.title ?? ''),
             subtitle: Text(

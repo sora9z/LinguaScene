@@ -4,6 +4,7 @@ import 'package:client/providers/chat_room_provider.dart';
 import 'package:client/services/socket_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:client/services/api_service.dart';
 
 class ChatRoomScreen extends StatefulWidget {
   final ChatRoom chatRoom;
@@ -16,13 +17,30 @@ class ChatRoomScreen extends StatefulWidget {
 
 class _ChatRoomScreenState extends State<ChatRoomScreen> {
   final TextEditingController _messageController = TextEditingController();
-  // final List<String> _messages = []; // 메시지 리스트
+  final ApiService _apiService = ApiService();
   late SocketService _socketService;
 
   @override
   void initState() {
     super.initState();
     _initializeSocketConnection();
+    _initializeMessages();
+  }
+
+  Future<void> _initializeMessages() async {
+    try {
+      if (widget.chatRoom.messages.isEmpty) {
+        final messages =
+            await _apiService.fetchMessagesForChatRoom(widget.chatRoom.id);
+        if (mounted) {
+          setState(() {
+            widget.chatRoom.addMessages(messages);
+          });
+        }
+      }
+    } catch (e) {
+      print('Failed to load messages: $e');
+    }
   }
 
   Future<void> _initializeSocketConnection() async {
@@ -34,7 +52,16 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     _socketService.channel?.stream.listen(
       (message) {
         print('Received message: $message');
-        _addMessage(jsonDecode(message)['message'], false);
+
+        if (message is String) {
+          final decodedMessage = jsonDecode(message);
+          final messageType = decodedMessage['type'];
+          final messageContent = decodedMessage['message'];
+
+          if (messageType == 'assistant_message') {
+            _addMessage(messageContent, false);
+          }
+        }
       },
       onDone: () {
         print('Disconnected from chat room $roomPk');
@@ -46,15 +73,12 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   }
 
   void _addMessage(String message, bool isMe) {
-    if (isMe) {
-      Provider.of<ChatRoomProvider>(context, listen: false)
-          .addMessage('user-message', message);
-      setState(() {});
-    } else {
-      Provider.of<ChatRoomProvider>(context, listen: false)
-          .addMessage('gpt-message', message);
-      setState(() {});
-    }
+    final messageType = isMe ? 'user-message' : 'assistant-message';
+    Provider.of<ChatRoomProvider>(context, listen: false)
+        .addMessageToChatRoom(widget.chatRoom.id, message, messageType);
+
+    Provider.of<ChatRoomProvider>(context, listen: false)
+        .updateLastMessage(widget.chatRoom.id, message);
   }
 
   void _sendMessage() {
@@ -90,19 +114,19 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                   return ListView.builder(
                     reverse: true,
                     padding: const EdgeInsets.all(10),
-                    itemCount: chatRoomProvider.messages.length,
+                    itemCount: widget.chatRoom.messages.length,
                     itemBuilder: (context, index) {
-                      final message = chatRoomProvider.messages[
-                          chatRoomProvider.messages.length - 1 - index];
+                      final message = widget.chatRoom.messages[
+                          widget.chatRoom.messages.length - 1 - index];
                       bool isGptMessage =
-                          message.type == 'gpt-message'; // GPT 메시지 확인
+                          message.type == 'assistant-message'; // GPT 메시지 확인
 
                       return Row(
                         mainAxisAlignment: isGptMessage
                             ? MainAxisAlignment.start
                             : MainAxisAlignment.end,
                         children: [
-                          if (isGptMessage) // gpt-message일 때만 표시
+                          if (isGptMessage) // assistant-message일 때만 표시
                             const Column(
                               children: [
                                 CircleAvatar(

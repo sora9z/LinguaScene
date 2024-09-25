@@ -1,6 +1,8 @@
+import 'package:client/providers/chat_room_provider.dart';
 import 'package:client/screens/chat_room_screen.dart';
 import 'package:client/services/api_service.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class ChatRoomCreateScreen extends StatefulWidget {
   const ChatRoomCreateScreen({super.key});
@@ -50,6 +52,8 @@ class _ChatRoomCreateScreenState extends State<ChatRoomCreateScreen> {
         'gpt_role': _gptRoleController.text,
       });
 
+      Provider.of<ChatRoomProvider>(context, listen: false)
+          .addChatRoom(newChatRoom);
       // 채팅방 화면으로 이동
       Navigator.pushReplacement(
         context,

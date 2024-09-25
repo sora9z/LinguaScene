@@ -1,24 +1,32 @@
+import 'package:client/models/chat_room.dart';
+import 'package:client/models/message.dart';
 import 'package:flutter/foundation.dart';
 
-class Message {
-  final String type;
-  final String message;
-
-  Message(this.type, this.message);
-}
-
 class ChatRoomProvider with ChangeNotifier {
-  final List<Message> _messages = [];
+  final List<ChatRoom> _chatRooms = [];
 
-  List<Message> get messages => _messages;
+  List<ChatRoom> get chatRooms => _chatRooms;
 
-  void addMessage(String type, String message) {
-    _messages.add(Message(type, message));
+  void updateLastMessage(int chatRoomId, String message) {
+    final chatRoom = _chatRooms.firstWhere((room) => room.id == chatRoomId);
+    chatRoom.updateLastMessage(message);
+    notifyListeners(); // 상태 변경 알림
+  }
+
+  void addChatRoom(ChatRoom newChatRoom) {
+    _chatRooms.add(newChatRoom);
     notifyListeners();
   }
 
-  void clearMessages() {
-    _messages.clear();
+  void setChatRooms(List<ChatRoom> chatRooms) {
+    _chatRooms.clear();
+    _chatRooms.addAll(chatRooms);
     notifyListeners();
+  }
+
+  void addMessageToChatRoom(int? chatRoomId, String message, String type) {
+    final chatRoom = _chatRooms.firstWhere((room) => room.id == chatRoomId);
+    chatRoom.addMessage(Message(type: type, message: message));
+    notifyListeners(); // 상태 변경 알림
   }
 }
