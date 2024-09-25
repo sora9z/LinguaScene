@@ -21,3 +21,5 @@ samples, guidance on mobile development, and a full API reference.
 - 로그인 연장
 - 테스트 코드 작성
 - 리팩토링
+- 추천표현
+- 음성 출력
