@@ -104,10 +104,12 @@ class ApiService {
 
     if (response.statusCode == 200) {
       final List<dynamic> data = jsonDecode(response.body);
+
       final result = data
           .where((json) => json['role'] != 'system')
           .map((json) => Message.fromJson(json))
           .toList();
+
       return result;
     } else {
       throw Exception('Failed to load messages');

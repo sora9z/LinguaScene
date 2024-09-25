@@ -29,4 +29,10 @@ class ChatRoomProvider with ChangeNotifier {
     chatRoom.addMessage(Message(type: type, message: message));
     notifyListeners();
   }
+
+  void addMessagesToChatRoom(int chatRoomId, List<Message> messages) {
+    final chatRoom = _chatRooms.firstWhere((room) => room.id == chatRoomId);
+    chatRoom.addMessages(messages);
+    notifyListeners();
+  }
 }

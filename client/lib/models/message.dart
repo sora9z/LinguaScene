@@ -8,9 +8,13 @@ class Message {
   });
 
   factory Message.fromJson(Map<String, dynamic> json) {
-    return Message(
-      type: json['role'],
+    final messageObj = Message(
+      type: json['role'] == 'user' || json['role'] == 'user-message'
+          ? 'user-message'
+          : 'assistant-message',
       message: json['content'],
     );
+
+    return messageObj;
   }
 }

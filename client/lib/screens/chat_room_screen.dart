@@ -32,9 +32,14 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       if (widget.chatRoom.messages.isEmpty) {
         final messages =
             await _apiService.fetchMessagesForChatRoom(widget.chatRoom.id);
+        print("test_initializeMessages");
+        print(messages);
+
         if (mounted) {
           setState(() {
-            widget.chatRoom.addMessages(messages);
+            // widget.chatRoom.addMessages(messages);
+            Provider.of<ChatRoomProvider>(context, listen: false)
+                .addMessagesToChatRoom(widget.chatRoom.id, messages);
           });
         }
       }
