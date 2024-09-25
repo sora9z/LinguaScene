@@ -28,14 +28,16 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 await self.accept()
                 # room에 message가 하나도 없다면 초기 프롬프트를 보내고 응답을 전달
                 if await self.get_message_count(self.room) == 0:
-                    initial_message = self.room.get_initial_messages()
-                    await self.save_message(self.room, initial_message)
-                    self.get_message = initial_message
-                    assistant_message = await self.get_query();
+                    
+                    initial_messages = self.room.get_initial_messages() 
+                    await self.save_message(self.room, initial_messages[0])
+                    await self.save_message(self.room, initial_messages[1])
+                    self.get_message = initial_messages
+                    
                     await self.send(  
                         text_data=json.dumps({
                             "type": "assistant_message",
-                            "message": assistant_message
+                            "message": await self.get_query()
                         })
                     )
                 # 추천 프롬프트를 미리 조회하여 저장
@@ -43,7 +45,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     async def receive(self, text_data, **kwargs):
         text_data_json = json.loads(text_data)
-        print("text_data_json",text_data_json)
         if self.room is None:
             return  # 채팅방 정보가 없으면 처리하지 않음
         if text_data_json["type"] =="user-message":
