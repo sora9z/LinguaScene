@@ -37,6 +37,18 @@ class _ChatListScreenState extends State<ChatListScreen> {
     }
   }
 
+  Future<void> _deleteChatRoom(ChatRoom chatroom) async {
+    try {
+      await _apiService.deleteChatRoom(chatroom.id);
+      setState(() {
+        Provider.of<ChatRoomProvider>(context, listen: false)
+            .removeChatRoom(chatroom);
+      });
+    } catch (e) {
+      print('Failed to delete chatRoomL $e');
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -78,7 +90,20 @@ class _ChatListScreenState extends State<ChatListScreen> {
           final chatRoom =
               Provider.of<ChatRoomProvider>(context).chatRooms[index];
           return ListTile(
-            title: Text(chatRoom.title ?? ''),
+            title: Row(
+              children: [
+                Expanded(
+                  child: Text(chatRoom.title ?? ''),
+                ),
+                GestureDetector(
+                    onTap: () => _deleteChatRoom(chatRoom),
+                    child: const Text('Delete',
+                        style: TextStyle(
+                          decoration: TextDecoration.underline,
+                          color: Colors.red,
+                        )))
+              ],
+            ),
             subtitle: Text(
                 'Last meseage: ${_truncateMessage(chatRoom.lastMessage ?? '')}'),
             onTap: () {

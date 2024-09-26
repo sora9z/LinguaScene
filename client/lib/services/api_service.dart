@@ -106,7 +106,7 @@ class ApiService {
       final List<dynamic> data = jsonDecode(response.body);
 
       final result = data
-          .where((json) => json['role'] != 'system')
+          .where((json) => json['role'] != MessageRole.system.name)
           .map((json) => Message.fromJson(json))
           .toList();
 
@@ -119,5 +119,18 @@ class ApiService {
   Future<void> logout() async {
     final tokenManager = TokenManager();
     await tokenManager.clearTokens();
+  }
+
+  Future<bool> deleteChatRoom(int chatRoomId) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/chat/delete/$chatRoomId/'),
+      headers: await HttpHeaderBuilder.buildHeaders(),
+    );
+
+    if (response.statusCode == 200) {
+      return true;
+    } else {
+      throw Exception('Failed to delete chat room');
+    }
   }
 }
