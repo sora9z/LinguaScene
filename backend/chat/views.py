@@ -4,7 +4,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 
 from .models import ChatRoom
-from .serializer import ChatRoomCreateSerializer, ChatRoomListSerializer
+from .serializer import ChatRoomCreateSerializer, ChatRoomDeleteSerializer, ChatRoomListSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -36,3 +36,21 @@ class ChatRoomCreateAPIView(APIView):
         
         logger.error(f"Serializer errors: {serializer.errors}")
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ChatRoomDeleteAPIView(APIView):
+    def delete(self,request,room_id):
+            chat_room = ChatRoom.objects.get(id = room_id)
+            serializer = ChatRoomDeleteSerializer(data={'room_id': room_id},context={'request': request})
+            
+            if serializer.is_valid():
+                chat_room.delete()
+                logger.info(f"Chat room deleted successfully: {chat_room.id }")
+                return Response(status=status.HTTP_200_OK)
+            logger.error(f"Serializer errors: {serializer.errors}")
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        
+        
+        
+
+        

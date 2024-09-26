@@ -28,3 +28,18 @@ class ChatRoomCreateSerializer(serializers.ModelSerializer):
             'gpt_role_en': {'required': False}
         }
     
+class ChatRoomDeleteSerializer(serializers.Serializer):
+    room_id = serializers.IntegerField()
+
+    def validate(self, data):
+        room_id = data.get('room_id')
+        user = self.context['request'].user
+        try:
+            chat_room = ChatRoom.objects.get(id=room_id)
+        except ChatRoom.DoesNotExist:
+            raise serializers.ValidationError("Could not find chat room with that id.")
+        
+        if chat_room.user != user:
+            raise serializers.ValidationError("You do not have permission to delete this chat room.")
+        
+        return data
