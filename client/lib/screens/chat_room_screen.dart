@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:client/models/chat_room.dart';
+import 'package:client/models/message.dart';
 import 'package:client/providers/chat_room_provider.dart';
 import 'package:client/services/socket_service.dart';
 import 'package:flutter/material.dart';
@@ -32,12 +33,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       if (widget.chatRoom.messages.isEmpty) {
         final messages =
             await _apiService.fetchMessagesForChatRoom(widget.chatRoom.id);
-        print("test_initializeMessages");
-        print(messages);
 
         if (mounted) {
           setState(() {
-            // widget.chatRoom.addMessages(messages);
             Provider.of<ChatRoomProvider>(context, listen: false)
                 .addMessagesToChatRoom(widget.chatRoom.id, messages);
           });
@@ -58,15 +56,11 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       (message) {
         print('Received message: $message');
 
-        if (message is String) {
-          final decodedMessage = jsonDecode(message);
-          final messageType = decodedMessage['type'];
-          final messageContent = decodedMessage['message'];
+        final decodedMessage = jsonDecode(message);
+        final messageType = decodedMessage['type'];
+        final messageContent = decodedMessage['message']['content'];
 
-          if (messageType == 'assistant_message') {
-            _addMessage(messageContent, false);
-          }
-        }
+        _addMessage(messageContent, messageType);
       },
       onDone: () {
         print('Disconnected from chat room $roomPk');
@@ -77,10 +71,13 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     );
   }
 
-  void _addMessage(String message, bool isMe) {
-    final messageType = isMe ? 'user-message' : 'assistant-message';
+  void _addMessage(String message, String messageType) {
+    final messageRole = messageType == 'user-message'
+        ? MessageRole.user
+        : MessageRole.assistant;
+
     Provider.of<ChatRoomProvider>(context, listen: false)
-        .addMessageToChatRoom(widget.chatRoom.id, message, messageType);
+        .addMessageToChatRoom(widget.chatRoom.id, message, messageRole);
 
     Provider.of<ChatRoomProvider>(context, listen: false)
         .updateLastMessage(widget.chatRoom.id, message);
@@ -89,10 +86,12 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   void _sendMessage() {
     final message = _messageController.text.trim();
     if (message.isNotEmpty) {
-      _addMessage(message, true);
+      var messageType = 'user-message';
+      _addMessage(message, messageType);
       _messageController.clear();
-      var userMessage = {'type': 'user-message', 'message': message};
-      _socketService.sendMessage(userMessage);
+      var userMessage = {'role': MessageRole.user.name, 'message': message};
+
+      _socketService.sendMessage(messageType, userMessage);
     }
   }
 
@@ -123,8 +122,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                     itemBuilder: (context, index) {
                       final message = widget.chatRoom.messages[
                           widget.chatRoom.messages.length - 1 - index];
-                      bool isGptMessage =
-                          message.type == 'assistant-message'; // GPT 메시지 확인
+                      bool isGptMessage = message.role == MessageRole.assistant;
 
                       return Row(
                         mainAxisAlignment: isGptMessage

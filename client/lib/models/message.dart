@@ -1,17 +1,28 @@
+enum MessageRole {
+  system,
+  user,
+  assistant;
+
+  static MessageRole fromString(String value) {
+    return MessageRole.values.firstWhere((role) => role.name == value);
+  }
+
+  @override
+  String toString() => name;
+}
+
 class Message {
-  final String type;
+  final MessageRole role;
   final String message;
 
   Message({
-    required this.type,
+    required this.role,
     required this.message,
   });
 
   factory Message.fromJson(Map<String, dynamic> json) {
     final messageObj = Message(
-      type: json['role'] == 'user' || json['role'] == 'user-message'
-          ? 'user-message'
-          : 'assistant-message',
+      role: MessageRole.fromString(json['role'] as String),
       message: json['content'],
     );
 

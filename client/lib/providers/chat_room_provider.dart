@@ -7,6 +7,11 @@ class ChatRoomProvider with ChangeNotifier {
 
   List<ChatRoom> get chatRooms => _chatRooms;
 
+  List<Message> getMessages(int chatRoomId) {
+    final chatRoom = _chatRooms.firstWhere((room) => room.id == chatRoomId);
+    return chatRoom.getMessages();
+  }
+
   void updateLastMessage(int chatRoomId, String message) {
     final chatRoom = _chatRooms.firstWhere((room) => room.id == chatRoomId);
     chatRoom.updateLastMessage(message);
@@ -24,15 +29,21 @@ class ChatRoomProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  void addMessageToChatRoom(int? chatRoomId, String message, String type) {
+  void addMessageToChatRoom(
+      int? chatRoomId, String message, MessageRole messageRole) {
     final chatRoom = _chatRooms.firstWhere((room) => room.id == chatRoomId);
-    chatRoom.addMessage(Message(type: type, message: message));
+    chatRoom.addMessage(Message(role: messageRole, message: message));
     notifyListeners();
   }
 
   void addMessagesToChatRoom(int chatRoomId, List<Message> messages) {
     final chatRoom = _chatRooms.firstWhere((room) => room.id == chatRoomId);
     chatRoom.addMessages(messages);
+    notifyListeners();
+  }
+
+  void removeChatRoom(ChatRoom chatRoom) {
+    _chatRooms.remove(chatRoom);
     notifyListeners();
   }
 }

@@ -25,11 +25,11 @@ class SocketService {
     print('Connecting to chat room $roomPk');
   }
 
-  void sendMessage(message) {
+  void sendMessage(String type, Object content) {
     if (channel != null) {
-      final jsonMessage = jsonEncode(message);
+      final jsonMessage = jsonEncode({'type': type, 'content': content});
       channel?.sink.add(jsonMessage);
-      print("Sending message: $message");
+      print("Sending message: $content");
     } else {
       print("WebSocket channel is not initialized. Cannot send message.");
     }
