@@ -103,7 +103,7 @@ class ChatRoom(models.Model):
 
         return [
             GptMessage(role="system",content=system_message),
-            GptMessage(role="user",content=user_message)
+            GptMessage(role="system",content=user_message)
         ]
 
     def get_recommend_message(self)->str:

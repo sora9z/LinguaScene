@@ -29,9 +29,9 @@ class OpenAiService:
             )  
 
             response_role = response_dict.choices[0].message.role
-            response_content = response_dict.choices[0].message.content
+            response_message = response_dict.choices[0].message.content
 
-            return GptMessage(role=response_role, content=response_content)
+            return GptMessage(role=response_role, content=response_message)
         except APIConnectionError as e:
             logger.error("The server could not be reached",e)
         except RateLimitError as e:

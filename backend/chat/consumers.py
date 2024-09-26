@@ -48,9 +48,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
         if self.room is None:
             return  # 채팅방 정보가 없으면 처리하지 않음
         if text_data_json["type"] =="user-message":
-            await self.save_message(self.room, text_data_json)
+            await self.save_message(self.room, GptMessage(role="user",content=text_data_json["content"]["message"]))
             # user가 보낸 메시지를 받아서 assistant 메시지를 반환
-            assistant_message = await self.get_query(user_query=text_data_json["message"])
+            assistant_message = await self.get_query(user_query=text_data_json["content"]["message"])
+            await self.save_message(self.room, assistant_message)
             await self.send(text_data=json.dumps({
                  "type": "assistant_message",
                  "message": assistant_message
@@ -93,17 +94,17 @@ class ChatConsumer(AsyncWebsocketConsumer):
         if command_query is not None and user_query is not None:
             raise ValueError("command_query와 user_query 중 하나만 입력해야 합니다.")
         elif command_query is not None:
-             self.get_message.append(GptMessage(role="user",content=command_query))
+             self.get_message.append(GptMessage(role="systm",content=command_query))
         elif user_query is not None:
             self.get_message.append(GptMessage(role="user",content=user_query))
 
-        response_message = await self.openai_service.get_chat_response(self.get_message)
+        response_message:GptMessage = await self.openai_service.get_chat_response(self.get_message)
 
         if response_message:
              if command_query is None:
                 # connamd query는 추천표현 요청 이기 때문에 get_message에 추가하지 않는다.
                  self.get_message.append(response_message)
-             return response_message["content"]
+             return response_message
         else:
              return "Error: Unable to get response from OpenAI API"
 
