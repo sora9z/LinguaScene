@@ -1,9 +1,12 @@
+from asyncio import exceptions
 import logging
 from rest_framework.permissions import AllowAny
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
+
+from .services import signup_service
 
 from .serializers import LoginSerializer, SignupSerializer
 
@@ -12,15 +15,15 @@ logger = logging.getLogger(__name__)
 class SignupView(APIView):
     permission_classes = [AllowAny]
     def post(self, request):
-        serializer = SignupSerializer(data=request.data)
-
-        if serializer.is_valid():
-            user = serializer.save()
+        try:
+            user = signup_service(request.data)
             logger.info(f"User created successfully: {user.username}")
             return Response(status=status.HTTP_201_CREATED)
-        
-        logger.error(f"Serializer errors: {serializer.errors}")
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except exceptions.InvalidStateError:  
+            return Response({"detail": "Invalid data"}, status=status.HTTP_400_BAD_REQUEST)  
+        except Exception as e:
+            return Response({"detail": "Server error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 class LoginView(APIView):
     permission_classes = [AllowAny]
