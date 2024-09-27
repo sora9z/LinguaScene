@@ -70,6 +70,7 @@ class UserServiceTests(TestCase):
 
         mock_serializer.is_valid.assert_called_once()
         self.assertEqual(result['refreshToken'],'fake_refresh_token')
+        self.assertEqual(result['accessToken'],'fake_access_token')
 
     @patch('users.services.LoginSerializer')
     @patch('users.services.logger')
