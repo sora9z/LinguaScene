@@ -34,9 +34,7 @@ def login_service(data):
                 'refreshToken': str(refresh),
                 'accessToken': str(refresh.access_token),
             }
-    except exceptions.InvalidStateError as e:
-        logger.error(f"[user/service] Invalid state error: {e}")
-        raise e
+        
     except Exception as e:
-        logger.error(f"[user/service] Unexpected error: {e}")
+        logger.error(f"[user/service] error: {e}")
         raise e
