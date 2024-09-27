@@ -31,20 +31,22 @@ class UserServiceTests(TestCase):
         mock_serializer.save.assert_called_once()
     
     @patch('users.services.SignupSerializer')
-    def test_signup_service_exception_invali(self,MockSignupSerializer):
+    @patch('users.services.logger')
+    def test_signup_service_exception_invali(self,mock_logger,MockSignupSerializer):
         mock_serializer = MockSignupSerializer.return_value
-        mock_serializer.is_valid.return_value = False
-        mock_serializer.errors = {'nor_field_errors':['Invalid data']}
+        mock_serializer.is_valid.side_effect = ValidationError("Invalid data")
 
         data = {
             "password": "password123",
             "email": "testuser@example.com"
         }
 
-        with self.assertRaises(exceptions.InvalidStateError): 
+        with self.assertRaises(ValidationError): 
             signup_service(data)
 
         mock_serializer.is_valid.assert_called_once()
+        mock_logger.error.assert_called_once()
+
 
     
     @patch('users.services.LoginSerializer')
@@ -79,8 +81,6 @@ class UserServiceTests(TestCase):
             "password": "password123",
             "email": "testuser@example.com"
         }
-
-
 
         with self.assertRaises(ValidationError): 
             login_service(data)

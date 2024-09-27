@@ -14,8 +14,6 @@ def signup_service(data):
            user = serializer.save()
            logger.info(f"User created successfully: {user.username}")
            return user
-        else:
-            raise exceptions.InvalidStateError('Invalid data')
             
      except Exception as e:
         logger.error(f"[user/service] Error during signup: {e}")
