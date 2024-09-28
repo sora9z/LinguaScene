@@ -6,7 +6,7 @@ from channels.db import database_sync_to_async
 from message.models import Message
 from users.models import CustomUser
 from .models import ChatRoom, GptMessage
-from .openai_service import OpenAiService
+from .services.openai_service import OpenAiService
 
 class ChatConsumer(AsyncWebsocketConsumer):
     # 처음 연결시 초기 프롬프트를 get_message에 저장
