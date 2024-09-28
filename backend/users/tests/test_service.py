@@ -1,9 +1,7 @@
-from asyncio import exceptions
-from unittest import mock
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, patch
 from django.test import TestCase
-from rest_framework.exceptions import ValidationError
-
+from rest_framework.exceptions import AuthenticationFailed
+from libs.error.custom_exceptions import ValidationError
 from users.services import login_service, signup_service
 from django.contrib.auth import get_user_model
 
@@ -29,6 +27,7 @@ class UserServiceTests(TestCase):
 
         mock_serializer.is_valid.assert_called_once()
         mock_serializer.save.assert_called_once()
+        # self.assertEqual(user.email,data['email'])
     
     @patch('users.services.SignupSerializer')
     @patch('users.services.logger')
@@ -45,7 +44,7 @@ class UserServiceTests(TestCase):
             signup_service(data)
 
         mock_serializer.is_valid.assert_called_once()
-        mock_logger.error.assert_called_once()
+        mock_logger.warning.assert_called_once()
 
 
     
@@ -76,15 +75,15 @@ class UserServiceTests(TestCase):
     @patch('users.services.logger')
     def test_login_service_exception_invalid(self,mock_logger,MockingLoginSerializer):
         mock_serializer = MockingLoginSerializer.return_value
-        mock_serializer.is_valid.side_effect = ValidationError("Invalid data")
+        mock_serializer.is_valid.side_effect = AuthenticationFailed("Invalid data")
         
         data = {
             "password": "password123",
             "email": "testuser@example.com"
         }
 
-        with self.assertRaises(ValidationError): 
+        with self.assertRaises(AuthenticationFailed): 
             login_service(data)
         
         mock_serializer.is_valid.assert_called_once()       
-        mock_logger.error.assert_called_once()
+        mock_logger.warning.assert_called_once()
