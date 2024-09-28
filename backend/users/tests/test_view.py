@@ -6,21 +6,25 @@ from libs.error.custom_exceptions import ValidationError
 from rest_framework.exceptions import AuthenticationFailed
 
 class UserText(APITestCase):
+    def setUp(self):
+        self.user = MagicMock(id=1, email='test@test.com', first_name='test', last_name='user', is_active=True)
     # signup tests
     @patch('users.views.signup_service')
     def test_signup_success(self,MockingSignupService):
-        mock_service = MockingSignupService.return_value
-        mock_user = MagicMock(email="test@test.com")
-        mock_service.return_value = mock_user
-
-        url = reverse('signup')
+        MockingSignupService.return_value = self.user
+        
         data = {
             "email":"test@test.com",
             "password":"1234"
         }
 
+        url = reverse('signup')
+
         response = self.client.post(url,data,format = 'json') # 가상 클라이언트
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        MockingSignupService.assert_called_once_with(data)
+
+
 
     @patch('users.views.signup_service')
     def test_signup_exception_validation(self,MockingSignupService):
