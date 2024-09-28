@@ -5,7 +5,7 @@ from django.test import TestCase
 from rest_framework.exceptions import ValidationError
 
 from chat.models import ChatRoom
-from chat.services.chat_services import chat_room_list_service
+from chat.services.chat_services import chat_room_create_service, chat_room_list_service
 
 # 유효한 데이터를 주었을 때 직렬화된 데이터를 반환하는지 확인
 # 예외 발생시 처리 확인
@@ -55,7 +55,48 @@ class ChatServiceTests(TestCase):
 
         self.assertEqual(str(e.exception),"Database error")
 
-        
+    @patch('chat.services.chat_services.ChatRoomCreateSerializer')
+    def test_chat_room_create_service_success(self,MockingChatRoomCreateSerializer):
+        mock_serializer_instance = MockingChatRoomCreateSerializer.return_value
+        mock_serializer_instance.is_valid.return_value = True
+        mock_chat_room = MagicMock(id=1)
+        mock_serializer_instance.save.return_value = mock_chat_room
 
+        data = {
+            'title': '',
+            'language': 'en-US',
+            'level': ChatRoom.Level.BEGINNER,
+            'situation': 'Ordering food',
+            'my_role': 'Customer',
+            'gpt_role': 'Waiter',
+            'user': self.user,
+        }
+        chat_room_create_service(data)
+
+        self.assertEqual(data['title'],f"Language-{data['language']} Level-{data['level']}")
+        MockingChatRoomCreateSerializer.assert_called_once_with(data=data)
+        mock_serializer_instance.is_valid.assert_called_once()
+        mock_serializer_instance.save.assert_called_once_with(user=data['user'])
+
+    @patch('chat.services.chat_services.ChatRoomCreateSerializer')
+    def test_chat_room_create_service_exception(self,MockingChatRoomCreateSerializer):
+        mock_serializer_instance = MockingChatRoomCreateSerializer.return_value
+        mock_serializer_instance.is_valid.side_effect = Exception("Invalid data")
+
+
+        data = {
+            'title': '',
+            'language': 'en-US',
+            'level': ChatRoom.Level.BEGINNER,
+            'situation': 'Ordering food',
+            'my_role': 'Customer',
+            'gpt_role': 'Waiter',
+            'user': self.user,
+        }
+
+        with self.assertRaises(Exception) as e:
+            chat_room_create_service(data)
+            
+        self.assertEqual(str(e.exception),"Invalid data")
 
     
