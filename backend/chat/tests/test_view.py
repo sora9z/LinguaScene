@@ -2,10 +2,8 @@ from unittest.mock import MagicMock, patch
 from django.urls import reverse
 from rest_framework.test import APITestCase
 from rest_framework import status
-from rest_framework.exceptions import ValidationError
 
 from chat.models import ChatRoom
-from users.models import CustomUser
 
 class ChatViewTests(APITestCase):
     def setUp(self):
@@ -48,7 +46,6 @@ class ChatViewTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
         self.assertEqual(response.json(), {"detail": "Server error"})
         MockingChatRoomListService.assert_called_once_with(self.user)
-    
 
     @patch('chat.views.chat_room_create_service')
     def test_chat_room_create_view_success(self,MockingChatRoomCreateService):
@@ -70,8 +67,6 @@ class ChatViewTests(APITestCase):
 
         data['user']=self.user
         MockingChatRoomCreateService.assert_called_once_with(data)
-
-
 
     @patch('chat.views.chat_room_create_service')
     def test_chat_room_list_view_exception(self, MockingChatRoomCreateService):
@@ -95,3 +90,28 @@ class ChatViewTests(APITestCase):
         data['user']=self.user
         MockingChatRoomCreateService.assert_called_once_with(data)
     
+    @patch('chat.views.chat_room_delete_service')
+    def test_chat_room_delete_view_success(self,MockingChatRoomDeleteService):
+        MockingChatRoomDeleteService.return_value = None # 아무 예외 없도록 설정
+
+
+        url = reverse('chatroom-delete',kwargs={'room_id': 1})
+
+        response = self.client.delete(url)
+
+        self.assertEqual(response.status_code,status.HTTP_201_CREATED)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        MockingChatRoomDeleteService.assert_called_once_with(1)
+
+    @patch('chat.views.chat_room_delete_service')
+    def test_chat_room_delete_view_exception(self, MockingChatRoomDeleteService):
+        MockingChatRoomDeleteService.side_effect = Exception("Unexpected error")
+        
+        url = reverse('chatroom-delete', kwargs={'room_id': 1})
+        
+        response = self.client.delete(url)
+
+        self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
+        self.assertEqual(response.json(), {"detail": "Server error"})
+        MockingChatRoomDeleteService.assert_called_once_with(1)        

@@ -1,6 +1,6 @@
 import logging
 from chat.models import ChatRoom
-from chat.serializer import ChatRoomCreateSerializer, ChatRoomListSerializer
+from chat.serializer import ChatRoomCreateSerializer, ChatRoomDeleteSerializer, ChatRoomListSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -34,3 +34,18 @@ def chat_room_create_service(data):
         logger.error(f"[chat/service/create] error: {e}")
         raise e
     
+def chat_room_delete_service(data):
+    try:    
+        chat_room = ChatRoom.objects.get(id = data)
+        
+        if chat_room is None:
+            return;
+
+        serializer = ChatRoomDeleteSerializer(data={'room_id': data})
+        
+        if serializer.is_valid():
+            chat_room.delete()
+            logger.info(f"Chat room deleted successfully: {chat_room.id }")
+    except Exception as e:
+        logger.error(f"[chat/service/create] error: {e}")
+        raise e

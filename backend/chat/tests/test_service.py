@@ -2,7 +2,7 @@ from unittest.mock import MagicMock, patch
 from django.test import TestCase
 
 from chat.models import ChatRoom
-from chat.services.chat_services import chat_room_create_service, chat_room_list_service
+from chat.services.chat_services import chat_room_create_service, chat_room_delete_service, chat_room_list_service
 
 # 유효한 데이터를 주었을 때 직렬화된 데이터를 반환하는지 확인
 # 예외 발생시 처리 확인
@@ -98,4 +98,36 @@ class ChatServiceTests(TestCase):
 
         self.assertEqual(str(e.exception),"Invalid data")
 
-    
+    #! delete_chet_room_test
+    @patch('chat.services.chat_services.ChatRoom.objects.get')
+    @patch('chat.services.chat_services.ChatRoomDeleteSerializer')
+    def test_chat_room_delete_service_success(self,MockingChatRoomDeleteSerializer,mock_get):
+        mock_serializer_instance = MockingChatRoomDeleteSerializer.return_value
+        mock_serializer_instance.is_valid.return_value = True
+
+        mock_chat_room = MagicMock(id=1)
+        mock_get.return_value = mock_chat_room
+        
+        chat_room_delete_service(data=1)
+
+        MockingChatRoomDeleteSerializer.assert_called_once_with(data={'room_id': 1})
+        mock_serializer_instance.is_valid.assert_called_once()
+        mock_get.assert_called_once_with(id = 1)
+
+
+    @patch('chat.services.chat_services.ChatRoom.objects.get')
+    @patch('chat.services.chat_services.ChatRoomDeleteSerializer')
+    def test_chat_room_delete_service_exception(self,MockingChatRoomDeleteSerializer,mock_get):
+        mock_serializer_instance = MockingChatRoomDeleteSerializer.return_value
+        mock_serializer_instance.is_valid.side_effect = Exception("Invalid data")
+
+        mock_chat_room = MagicMock(id=1)
+        mock_get.return_value = mock_chat_room
+
+
+        with self.assertRaises(Exception) as e:
+            chat_room_delete_service(data=1)
+
+        self.assertEqual(str(e.exception),"Invalid data")
+        mock_serializer_instance.is_valid.assert_called_once()
+        mock_get.assert_called_once_with(id = 1)
