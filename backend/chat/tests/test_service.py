@@ -1,8 +1,5 @@
-from asyncio import exceptions
-from unittest import mock
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, patch
 from django.test import TestCase
-from rest_framework.exceptions import ValidationError
 
 from chat.models import ChatRoom
 from chat.services.chat_services import chat_room_create_service, chat_room_list_service
@@ -14,6 +11,7 @@ class ChatServiceTests(TestCase):
     def setUp(self):
         self.user = MagicMock(id=1, email='test@test.com', first_name='test', last_name='user', is_active=True)
 
+    #! get_chet_room_list_test
     @patch('chat.services.chat_services.ChatRoom.objects.filter')
     @patch('chat.services.chat_services.ChatRoomListSerializer') # serializer mocking
     def test_chat_room_list_service_success(self,MockChatRoomListSerializer,mock_filter):
@@ -55,6 +53,7 @@ class ChatServiceTests(TestCase):
 
         self.assertEqual(str(e.exception),"Database error")
 
+    #! create_chet_room_test
     @patch('chat.services.chat_services.ChatRoomCreateSerializer')
     def test_chat_room_create_service_success(self,MockingChatRoomCreateSerializer):
         mock_serializer_instance = MockingChatRoomCreateSerializer.return_value
@@ -96,7 +95,7 @@ class ChatServiceTests(TestCase):
 
         with self.assertRaises(Exception) as e:
             chat_room_create_service(data)
-            
+
         self.assertEqual(str(e.exception),"Invalid data")
 
     
