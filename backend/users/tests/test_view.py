@@ -1,9 +1,9 @@
-from asyncio import exceptions
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, patch
 from django.urls import reverse
 from rest_framework.test import APITestCase
 from rest_framework import status
-from rest_framework.exceptions import ValidationError
+from libs.error.custom_exceptions import ValidationError
+from rest_framework.exceptions import AuthenticationFailed
 
 class UserText(APITestCase):
     # signup tests
@@ -23,9 +23,8 @@ class UserText(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
     @patch('users.views.signup_service')
-    def test_signup_exception_invalid(self,MockingSignupService):
-        mock_service = MockingSignupService
-        mock_service.side_effect = exceptions.InvalidStateError("Invalid state")
+    def test_signup_exception_validation(self,MockingSignupService):
+        MockingSignupService.side_effect = ValidationError("Invalid data provided.")
 
         url = reverse('signup')
         data = {
@@ -36,14 +35,16 @@ class UserText(APITestCase):
         response = self.client.post(url,data,format='json')
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data['detail'],"Invalid data")
+        self.assertEqual(response.data['detail'], "An validation error occured: Invalid data provided.")
 
-        mock_service.assert_called_once()
+        # signup_service가 한 번 호출되었는지 확인
+        MockingSignupService.assert_called_once()        
+
 
     @patch('users.views.signup_service')
     def test_signup_exception(self,MockingSignupService):
         mock_service = MockingSignupService
-        mock_service.side_effect = Exception("Server error")
+        mock_service.side_effect = Exception("Something error")
 
         url = reverse('signup')
         data = {
@@ -54,7 +55,7 @@ class UserText(APITestCase):
         response = self.client.post(url,data,format='json')
 
         self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
-        self.assertEqual(response.data['detail'],"Server error")        
+        self.assertEqual(response.data['detail'],"An unexpected error occurred.")        
 
     # login tests
     @patch('users.views.login_service')
@@ -78,7 +79,7 @@ class UserText(APITestCase):
     @patch('users.views.login_service')
     def test_login_exception_unauthorized(self,MockingLoginService):
         mock_service = MockingLoginService
-        mock_service.side_effect = exceptions.InvalidStateError("Invalid credentials")
+        mock_service.side_effect = AuthenticationFailed("Invalid credentials")
 
         url = reverse('login')
         data = {
@@ -96,7 +97,7 @@ class UserText(APITestCase):
     @patch('users.views.login_service')
     def test_login_exception(self,MockingLoginService):
         mock_service = MockingLoginService
-        mock_service.side_effect = Exception("Server error")
+        mock_service.side_effect = Exception("Something error")
 
         url = reverse('login')
         data = {
@@ -107,7 +108,7 @@ class UserText(APITestCase):
         response = self.client.post(url,data,format='json')
 
         self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
-        self.assertEqual(response.data['detail'],"Server error")        
+        self.assertEqual(response.data['detail'],"An unexpected error occurred.")        
 
 
 
