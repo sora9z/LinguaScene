@@ -16,7 +16,7 @@ def signup_service(data):
            return user
             
      except Exception as e:
-        logger.error(f"[user/service] Error during signup: {e}")
+        logger.error(f"[user/service/signup] Error during signup: {e}")
         raise e
 
 def login_service(data):
@@ -34,5 +34,5 @@ def login_service(data):
             }
         
     except Exception as e:
-        logger.error(f"[user/service] error: {e}")
+        logger.error(f"[user/service/login] error: {e}")
         raise e
