@@ -1,12 +1,17 @@
+import os
 from typing import Literal, TypedDict, List
 from django.db import models
 
+from .services.langchain_service.chains import ChatChain
 # TypedDict은 사전으로 사용이 되지만 타입으로도 지정할 수 있다.
 class GptMessage(TypedDict):
     role: Literal["system", "user","assistant"]
     content:str
 
 class ChatRoom(models.Model):
+    def __init__(self,*args, **kwargs):
+        super().__init__(*args,**kwargs)
+        self.chat_chain = ChatChain(api_key=os.getenv("OPENAI_API_KEY"))
     class Language(models.TextChoices):
         # 코드에서 사용, 데이터베이스에 저장, 사용자에게 보여지는 값
         ENGLISH = 'en-US', 'English'
@@ -64,65 +69,58 @@ class ChatRoom(models.Model):
         help_text='GPT 프롬프트에 직접적으로 활용됨. 비어있는 경우 gpt_role 필드를 번역하여 자동으로 반영됨.',
     )
 
-    def get_initial_messages(self)->List[GptMessage]:
-        gpt_name = "RolePlayingBot"
-        language = self.get_language_display()
-        situation_en = self.situation_en
-        my_role_en = self.my_role_en
-        gpt_role_en = self.gpt_role_en
-
+    def get_level_string(self):
         if self.level == self.Level.BEGINNER:
-            level_string = f"s beginner in {language}"
-            level_word = "very simple"
+            return f"a beginner in {self.get_language_display()}"
         elif self.level == self.Level.INTERMEDIATE:
-            level_string = f"s intermediate in {language}"
-            level_word = "simple"
+            return f"an intermediate learner in {self.get_language_display()}"
         elif self.level == self.Level.ADVANCED:
-            level_string = f"s advanced in {language}"
-            level_word = "difficult"
-        else: 
-            raise ValueError(f"Invalid level : {self.level}")
-      
-        system_message = (
-            f"You are helpful assistant supporting people learning {language}. "
-            f"Your name is {gpt_name}. "
-            f"Please assume that the user you are assisting is {level_string}. "
-            f"And please write only the sentence without the character role."
-        )
-
-        user_message = (
-            f"Let's have a conversation in {language}. "
-            f"Please answer in {language} only "
-            f"without providing a translation. "
-            f"And please don't write down the pronunciation either. "
-            f"Let us assume that the situation in '{situation_en}'. "
-            f"I am {my_role_en}. The character I want you to act as is {gpt_role_en}. "
-            f"Please make sure that I'm {level_string}, so please use {level_word} words "
-            f"as much as possible. Now, start a conversation with the first sentence!"
-        )
-
-        return [
-            GptMessage(role="system",content=system_message),
-            GptMessage(role="system",content=user_message)
-        ]
-
-    def get_recommend_message(self)->str:
-        level = self.level
-
-        if level == self.Level.BEGINNER:
-            level_word = "very simple"
-        elif level == self.Level.INTERMEDIATE:
-            level_word = "simple"
-        elif level == self.Level.ADVANCED:
-            level_word = "difficult"
+            return f"an advanced learner in {self.get_language_display()}"
         else:
-            raise ValueError(f"Invalid level : {level}")
-        return (
-            f"Can you please provide me an {level_word} example "
-            f"of how to respond to the last sentence "
-            f"in this situation, without providing a translation "
-            f"and any introductory phrases or sentences."
-        )
+            raise ValueError(f"Invalid level: {self.level}")
+        
+    def get_level_word(self):
+        if self.level == self.Level.BEGINNER:
+            return "very simple"
+        elif self.level == self.Level.INTERMEDIATE:
+            return "simple"
+        elif self.level == self.Level.ADVANCED:
+            return "complex"
+        else:
+            raise ValueError(f"Invalid level: {self.level}")                
+
+    def get_initial_messages(self)->List[GptMessage]:
+        
+        context = {
+            "gpt_name": "RolePlayingBot",
+            "language": self.get_language_display(),
+            "situation": self.situation_en or self.situation,
+            "my_role": self.my_role_en or self.my_role,
+            "gpt_role": self.gpt_role_en or self.gpt_role,
+            "level_string": self.get_level_string(),
+            "level_word": self.get_level_word(),
+        }
+        initial_messages = self.chat_chain.get_initial_messages(context)
+        return initial_messages
+
+    # TODO
+    # def get_recommend_message(self)->str:
+    #     level = self.level
+
+    #     if level == self.Level.BEGINNER:
+    #         level_word = "very simple"
+    #     elif level == self.Level.INTERMEDIATE:
+    #         level_word = "simple"
+    #     elif level == self.Level.ADVANCED:
+    #         level_word = "difficult"
+    #     else:
+    #         raise ValueError(f"Invalid level : {level}")
+    #     return (
+    #         f"Can you please provide me an {level_word} example "
+    #         f"of how to respond to the last sentence "
+    #         f"in this situation, without providing a translation "
+    #         f"and any introductory phrases or sentences."
+    #     )
 
 
     
