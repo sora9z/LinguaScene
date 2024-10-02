@@ -7,6 +7,7 @@ from message.models import Message
 from users.models import CustomUser
 from .models import ChatRoom, GptMessage
 from .services.openai_service import OpenAiService
+# from .services.openai_service_langchain import OPenAIServiceWithLangChain
 
 class ChatConsumer(AsyncWebsocketConsumer):
     # 처음 연결시 초기 프롬프트를 get_message에 저장
@@ -19,6 +20,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
           self.get_message: List[GptMessage] = []
           self.recommend_message:str = ""
           self.openai_service = OpenAiService()
+        #   self.openai_service_witn_langchain = OPenAIServiceWithLangChain()
 
     async def connect(self):
             self.room = await self.get_room()
@@ -28,7 +30,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 await self.accept()
                 # room에 message가 하나도 없다면 초기 프롬프트를 보내고 응답을 전달
                 if await self.get_message_count(self.room) == 0:
-                    
                     initial_messages = self.room.get_initial_messages() 
                     await self.save_message(self.room, initial_messages[0])
                     await self.save_message(self.room, initial_messages[1])
@@ -41,13 +42,15 @@ class ChatConsumer(AsyncWebsocketConsumer):
                         })
                     )
                 # 추천 프롬프트를 미리 조회하여 저장
-                self.recommend_message = self.room.get_recommend_message()
+                # self.recommend_message = self.room.get_recommend_message()
 
     async def receive(self, text_data, **kwargs):
         text_data_json = json.loads(text_data)
         if self.room is None:
             return  # 채팅방 정보가 없으면 처리하지 않음
+        
         if text_data_json["type"] =="user-message":
+            # user_message = HumanMessage(contnt=text_data_json["content"]["message"])
             await self.save_message(self.room, GptMessage(role="user",content=text_data_json["content"]["message"]))
             # user가 보낸 메시지를 받아서 assistant 메시지를 반환
             assistant_message = await self.get_query(user_query=text_data_json["content"]["message"])
@@ -57,13 +60,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
                  "message": assistant_message
                  })
             )
-        elif text_data_json["type"] == "request-recommend-message":
-            recommended_message = await self.get_query(command_query=self.recommend_message)
-            await self.send(text_data=json.dumps({
-                "type":"recommended-message",
-                "message": recommended_message
-                })
-            )
+        # elif text_data_json["type"] == "request-recommend-message":
+        #     recommended_message = await self.get_query(command_query=self.recommend_message)
+        #     await self.send(text_data=json.dumps({
+        #         "type":"recommended-message",
+        #         "message": recommended_message
+        #         })
+        #     )
         else:
             self.send(text_data=json.dumps({
                 "type":"error",
@@ -108,8 +111,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
         else:
              return "Error: Unable to get response from OpenAI API"
 
-
-    
 
     @database_sync_to_async
     def get_message_count(self, room):
