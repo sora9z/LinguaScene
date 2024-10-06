@@ -43,7 +43,7 @@ def application():
 #! TEST:Wobsocket connection & init message 전송 확인
 @pytest.mark.asyncio
 @patch('chat.consumers.ChatConsumer.save_message',new_callable=AsyncMock)
-@patch('chat.consumers.ChatConsumer.get_room')
+@patch('chat.consumers.ChatConsumer.get_room',new_callable=AsyncMock)
 @patch('chat.consumers.OpenAiService')
 async def test_connect_new_room(mock_openai_service, mock_get_room, mock_save_message, application):
     # mocking openaiservice
@@ -82,7 +82,7 @@ async def test_connect_new_room(mock_openai_service, mock_get_room, mock_save_me
 #! TEST: 메시지 수신 테스트(receive)
 @pytest.mark.asyncio
 @patch('chat.consumers.ChatConsumer.save_message',new_callable=AsyncMock)
-@patch('chat.consumers.ChatConsumer.get_room')
+@patch('chat.consumers.ChatConsumer.get_room',new_callable=AsyncMock)
 @patch('chat.consumers.OpenAiService')
 async def test_receive_user_message(mock_openai_service, mock_get_room, mock_save_message, application):
     mock_serevice_instance = mock_openai_service.return_value
@@ -92,11 +92,12 @@ async def test_receive_user_message(mock_openai_service, mock_get_room, mock_sav
         GptMessage(role='system',content='Initial prompt'),
         GptMessage(role='assistant',content='Initial response.')
     ])
+
+    mock_get_room.return_value = chat_room 
     mock_save_message.return_value = None
 
-    
     communicator = WebsocketCommunicator(application, f"/ws/chat/{chat_room.pk}/")
-    communicator.scope['user'] = mock_user
+    communicator.scope['user'] = mock_user(is_authenticated=True)
     communicator.scope['url_route'] = {'kwargs': {'room_pk': chat_room.pk}}
 
     connected, _ = await communicator.connect()
