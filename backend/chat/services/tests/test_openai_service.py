@@ -1,7 +1,7 @@
 
 from unittest.mock import patch
 
-from chat.services.openai_service_langchain import OPenAIServiceWithLangChain
+from chat.services.openai_service import OpenAiService
 
 
 class OPenAIServiceTestCase:
@@ -16,7 +16,7 @@ class OPenAIServiceTestCase:
         mock_chat_chain_instance = mock_chat_chain.return_value
         mock_chat_chain_instance.get_response.return_value = 'mocked response'
 
-        service = OPenAIServiceWithLangChain()
+        service = OpenAiService()
         messages = [{'role':'user','content':'hello'}]
         response = service.def_chat_response(messages)
 
