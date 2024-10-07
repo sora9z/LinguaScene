@@ -7,7 +7,6 @@ from message.models import Message
 from users.models import CustomUser
 from .models import ChatRoom, GptMessage
 from .services.openai_service import OpenAiService
-# from .services.openai_service_langchain import OPenAIServiceWithLangChain
 
 class ChatConsumer(AsyncWebsocketConsumer):
     # 처음 연결시 초기 프롬프트를 get_message에 저장
@@ -20,7 +19,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
           self.get_message: List[GptMessage] = []
           self.recommend_message:str = ""
           self.openai_service = OpenAiService()
-        #   self.openai_service_witn_langchain = OPenAIServiceWithLangChain()
 
     async def connect(self):
             self.room = await self.get_room()
@@ -28,19 +26,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
                  await self.close();
             else:
                 await self.accept()
-                # room에 message가 하나도 없다면 초기 프롬프트를 보내고 응답을 전달
-                if await self.get_message_count(self.room) == 0:
-                    initial_messages = self.room.get_initial_messages() 
-                    await self.save_message(self.room, initial_messages[0])
-                    await self.save_message(self.room, initial_messages[1])
-                    self.get_message = initial_messages
-                    
-                    await self.send(  
-                        text_data=json.dumps({
-                            "type": "assistant_message",
-                            "message": await self.get_query()
-                        })
-                    )
+                await self.handle_initial_message();
+   
                 # 추천 프롬프트를 미리 조회하여 저장
                 # self.recommend_message = self.room.get_recommend_message()
 
@@ -76,6 +63,20 @@ class ChatConsumer(AsyncWebsocketConsumer):
     
     async def disconnect(self, close_code):
             pass
+    
+    async def handle_initial_message(self):
+         if await self.get_message_count(self.room) == 0:
+            initial_messages = self.room.get_initial_messages() 
+            await self.save_messages(self.room, initial_messages)
+            self.get_message = initial_messages
+            
+            await self.send(  
+                text_data=json.dumps({
+                    "type": "assistant_message",
+                    "message": await self.get_query()
+                })
+            )         
+         
 
     @database_sync_to_async
     def get_room(self) -> ChatRoom | None:
@@ -101,6 +102,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         elif user_query is not None:
             self.get_message.append(GptMessage(role="user",content=user_query))
 
+        # TODO 랭체인으로 히스토리를 관리하는 것에 대해서 알아보기
         response_message:GptMessage = await self.openai_service.get_chat_response(self.get_message)
 
         if response_message:
@@ -120,3 +122,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
     def save_message(self, room, content):
         message = Message(chat_room=room, content=content)
         message.save()
+
+    @database_sync_to_async
+    def save_messages(self,room,messages):
+         for message in messages:
+              self.save_message(room,message)
