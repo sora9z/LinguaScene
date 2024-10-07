@@ -36,30 +36,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
         if self.room is None:
             return  # 채팅방 정보가 없으면 처리하지 않음
         
-        if text_data_json["type"] =="user-message":
-            # user_message = HumanMessage(contnt=text_data_json["content"]["message"])
-            await self.save_message(self.room, GptMessage(role="user",content=text_data_json["content"]["message"]))
-            # user가 보낸 메시지를 받아서 assistant 메시지를 반환
-            assistant_message = await self.get_query(user_query=text_data_json["content"]["message"])
-            await self.save_message(self.room, assistant_message)
-            await self.send(text_data=json.dumps({
-                 "type": "assistant_message",
-                 "message": assistant_message
-                 })
-            )
-        # elif text_data_json["type"] == "request-recommend-message":
-        #     recommended_message = await self.get_query(command_query=self.recommend_message)
-        #     await self.send(text_data=json.dumps({
-        #         "type":"recommended-message",
-        #         "message": recommended_message
-        #         })
-        #     )
+        message_type = text_data_json["type"]
+        if message_type =="user-message":
+             await self.handle_user_message(self,text_data_json)
         else:
-            self.send(text_data=json.dumps({
-                "type":"error",
-                "message":f"Invalid type: {text_data_json['type']}"
-            })
-            )
+            await self.send_error(f"Invalid type: {message_type}") 
+        # elif message_type=="request-recommend-message":
+        #     await self.recommend_message()
     
     async def disconnect(self, close_code):
             pass
@@ -76,6 +59,32 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     "message": await self.get_query()
                 })
             )         
+    
+    async def handle_user_message(self,text_data_json):
+        # user_message = HumanMessage(contnt=text_data_json["content"]["message"])
+        await self.save_message(self.room, GptMessage(role="user",content=text_data_json["content"]["message"]))
+        # user가 보낸 메시지를 받아서 assistant 메시지를 반환
+        assistant_message = await self.get_query(user_query=text_data_json["content"]["message"])
+        await self.save_message(self.room, assistant_message)
+        await self.send(text_data=json.dumps({
+             "type": "assistant_message",
+             "message": assistant_message
+             })
+        )         
+        self.send(text_data=json.dumps({
+                "type":"error",
+                "message":f"Invalid type: {text_data_json['type']}"
+            })
+            )
+            # TODO recommended message 추가     
+    # async def handle_recommended_message(self):
+    #     recommended_message = await self.get_query(command_query=self.recommend_message)
+
+    #     await self.send(text_data=json.dumps({
+    #         "type":"recommended-message",
+    #         "message": recommended_message
+    #         })
+    #     )
          
 
     @database_sync_to_async
