@@ -52,13 +52,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
             initial_messages = self.room.get_initial_messages() 
             await self.save_messages(self.room, initial_messages)
             self.get_message = initial_messages
-            
-            await self.send(  
-                text_data=json.dumps({
-                    "type": "assistant_message",
-                    "message": await self.get_query()
-                })
-            )         
+            resonse_message =  await self.get_query()
+            await self.send_message('assystant_message',resonse_message)
     
     async def handle_user_message(self,text_data_json):
         # user_message = HumanMessage(contnt=text_data_json["content"]["message"])
@@ -66,17 +61,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
         # user가 보낸 메시지를 받아서 assistant 메시지를 반환
         assistant_message = await self.get_query(user_query=text_data_json["content"]["message"])
         await self.save_message(self.room, assistant_message)
-        await self.send(text_data=json.dumps({
-             "type": "assistant_message",
-             "message": assistant_message
-             })
-        )         
-        self.send(text_data=json.dumps({
-                "type":"error",
-                "message":f"Invalid type: {text_data_json['type']}"
-            })
-            )
-            # TODO recommended message 추가     
+        await self.send_message('assystant_message',assistant_message)
+  
+    # TODO recommended message 추가     
     # async def handle_recommended_message(self):
     #     recommended_message = await self.get_query(command_query=self.recommend_message)
 
@@ -85,21 +72,37 @@ class ChatConsumer(AsyncWebsocketConsumer):
     #         "message": recommended_message
     #         })
     #     )
+
+    async def send_message(self,message_type,message):
+         await self.send(
+              text_data=json.dumps({
+                    "type": "assistant_message",
+                    "message": {
+                         "role":message.role,
+                         "content":message.content
+                    }
+                })
+            )   
          
+    async def send_error(self, error_message):
+        await self.send(
+            text_data=json.dumps({
+                "type": "error",
+                "message": error_message
+            })
+        )      
 
     @database_sync_to_async
     def get_room(self) -> ChatRoom | None:
         user:CustomUser =  self.scope['user']
         room_pk = self.scope['url_route']['kwargs']['room_pk']
-        room:ChatRoom = None;
 
         if user.is_authenticated:
             try:
-                 room = ChatRoom.objects.get(pk=room_pk)
+                 return ChatRoom.objects.get(pk=room_pk)
             except ChatRoom.DoesNotExist:
-                  pass
-            print("room is not None",room);
-            return room
+                  return None
+        return None
                 
     # command_query : 추천 표현 요청 등의 명령어
     # user_query : 사용자 입력
