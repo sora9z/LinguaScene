@@ -1,5 +1,5 @@
 import json
-from typing import List
+from typing import List, Union
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async 
 
@@ -8,15 +8,31 @@ from users.models import CustomUser
 from .models import ChatRoom, GptMessage
 from .services.openai_service import OpenAiService
 
+
+MESSAGE_TYPE = {
+    'request_user_message': 'request_user_message', # 일반 메시지
+    'request_system_message': 'request_system_message', # 추가 시스템 메시지
+    'request_recommend_message': 'request_recommend_message', # 추천 표현 메시지 (확장 가능성 있음 그런 경우 명칭 변경 필요)
+    'response_assistant_message':'response_assistant_message'
+}
+class MessageType:
+    REQUEST_USER_MESSAGE = MESSAGE_TYPE['request_user_message']
+    REQUEST_SYSTEM_MESSAGE = MESSAGE_TYPE['request_system_message']
+    REQUEST_RECOMMEND_MESSAGE = MESSAGE_TYPE['request_recommend_message']
+    RESPONSE_ASSISTANT_MESSAGE=MESSAGE_TYPE['response_assistant_message']
+
 class ChatConsumer(AsyncWebsocketConsumer):
     # 처음 연결시 초기 프롬프트를 get_message에 저장
-    # 초기 프롬프트를 get_query로 전달하여 openai로 보내고 응답을 받아서 반환
+    # 초기 프롬프트를 get_response로 전달하여 openai로 보내고 응답을 받아서 반환
     # 그 응답은 초기 프롬프트에 대한 응답이므로 get_message에 추가한 후 반환 role은 assistant
 
     def __init__(self,*ags,**kwargs):
           super().__init__(*ags,**kwargs)
           self.room = None
-          self.get_message: List[GptMessage] = []
+          # TODO여기서 관리하는 것이 맞을까? 전체적으로 정리 후 고민해보기
+          self.user_message: List[GptMessage] = [] 
+          self.system_message:List[GptMessage] = [] 
+
           self.recommend_message:str = ""
           self.openai_service = OpenAiService()
 
@@ -37,35 +53,49 @@ class ChatConsumer(AsyncWebsocketConsumer):
             return  # 채팅방 정보가 없으면 처리하지 않음
         
         message_type = text_data_json["type"]
-        if message_type =="user-message":
-             await self.handle_user_message(self,text_data_json)
+        if message_type == MessageType.REQUEST_USER_MESSAGE:
+            await self.handle_user_message(text_data_json)
         else:
             await self.send_error(f"Invalid type: {message_type}") 
-        # elif message_type=="request-recommend-message":
+        # elif message_type==MessageType.REQUEST_RECOMMEND_MESSAGE:
+        #     await self.request_recommend_message()
+        # elif message_type==MessageType.REQUEST_SYSTEM_MESSAGE:
         #     await self.recommend_message()
+
     
     async def disconnect(self, close_code):
             pass
     
     async def handle_initial_message(self):
          if await self.get_message_count(self.room) == 0:
-            initial_messages = self.room.get_initial_messages() 
-            await self.save_messages(self.room, initial_messages)
-            self.get_message = initial_messages
-            resonse_message =  await self.get_query()
-            await self.send_message('assystant_message',resonse_message)
+            
+            initial_setting = self.room.get_initial_setting()
+            response_message = await self.openai_service.get_initial_response(initial_setting)
+            initial_system_message, response = response_message['initial_message'], response_message['response']
+
+            await self.send_message(MessageType.RESPONSE_ASSISTANT_MESSAGE,response)
+
+            await self.save_messages(self.room, [initial_system_message.content,response.content])
+            self._append_to_message_buffer(type=MessageType.REQUEST_SYSTEM_MESSAGE,message=initial_system_message)
+            self._append_to_message_buffer(type=MessageType.RESPONSE_ASSISTANT_MESSAGE,message=response)
     
     async def handle_user_message(self,text_data_json):
-        # user_message = HumanMessage(contnt=text_data_json["content"]["message"])
-        await self.save_message(self.room, GptMessage(role="user",content=text_data_json["content"]["message"]))
+        content = text_data_json["message"]['content']
+        message_type = text_data_json["type"]
+        user_message = GptMessage(role="user",content=content)
+        self._append_to_message_buffer(type=message_type,message=user_message)
+
         # user가 보낸 메시지를 받아서 assistant 메시지를 반환
-        assistant_message = await self.get_query(user_query=text_data_json["content"]["message"])
-        await self.save_message(self.room, assistant_message)
-        await self.send_message('assystant_message',assistant_message)
+        assistant_message:GptMessage = await self.get_response(message_type=message_type) # GPTMessage
+        await self.send_message(message=assistant_message)
+
+        # 저장 밎 message_history update
+        await self.save_messages(self.room,[user_message,assistant_message])
+        self._append_to_message_buffer(type="assistant_message",message=assistant_message)
   
     # TODO recommended message 추가     
     # async def handle_recommended_message(self):
-    #     recommended_message = await self.get_query(command_query=self.recommend_message)
+    #     recommended_message = await self.get_response(command_query=self.recommend_message)
 
     #     await self.send(text_data=json.dumps({
     #         "type":"recommended-message",
@@ -73,13 +103,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
     #         })
     #     )
 
-    async def send_message(self,message_type,message):
+    async def send_message(self,message:GptMessage):
          await self.send(
               text_data=json.dumps({
-                    "type": "assistant_message",
+                    "type":MessageType.RESPONSE_ASSISTANT_MESSAGE,
                     "message": {
-                         "role":message.role,
-                         "content":message.content
+                         "role":message['role'],
+                         "content":message['content']
                     }
                 })
             )   
@@ -104,38 +134,39 @@ class ChatConsumer(AsyncWebsocketConsumer):
                   return None
         return None
                 
-    # command_query : 추천 표현 요청 등의 명령어
-    # user_query : 사용자 입력
-    async def get_query(self, command_query:str=None, user_query:str=None)->str:
-        if command_query is not None and user_query is not None:
-            raise ValueError("command_query와 user_query 중 하나만 입력해야 합니다.")
-        elif command_query is not None:
-             self.get_message.append(GptMessage(role="systm",content=command_query))
-        elif user_query is not None:
-            self.get_message.append(GptMessage(role="user",content=user_query))
+    
+    async def get_response(self, message_type:str)->GptMessage:
+        # 예외처리 추가
+        try:
+            if message_type == MessageType.REQUEST_USER_MESSAGE:
+                return await self.openai_service.get_chat_response(self.user_message)
+            elif message_type == MessageType.REQUEST_SYSTEM_MESSAGE:
+                return await self.openai_service.get_chat_response(self.system_message)
+            else : 
+                raise Exception("[consumer/get_response] Invelid message type") # log로 남기기 예외는 필요할까?
+        except Exception as e:
+            print(f"예외 발생: {e}")
+            raise e
 
-        # TODO 랭체인으로 히스토리를 관리하는 것에 대해서 알아보기
-        response_message:GptMessage = await self.openai_service.get_chat_response(self.get_message)
-
-        if response_message:
-             if command_query is None:
-                # connamd query는 추천표현 요청 이기 때문에 get_message에 추가하지 않는다.
-                 self.get_message.append(response_message)
-             return response_message
-        else:
-             return "Error: Unable to get response from OpenAI API"
-
-
+        
+    def _append_to_message_buffer(self, type,message:GptMessage):
+        if type == MessageType.REQUEST_USER_MESSAGE or type ==MessageType.RESPONSE_ASSISTANT_MESSAGE:
+              self.user_message.append(message)
+        elif type == MessageType.REQUEST_SYSTEM_MESSAGE:
+             self.system_message.append(message)
+        else :
+             None
+        
     @database_sync_to_async
     def get_message_count(self, room):
         return room.messages.count()        
     
     @database_sync_to_async
-    def save_message(self, room, content):
+    def save_message(self, room, content:str):
         message = Message(chat_room=room, content=content)
         message.save()
 
     @database_sync_to_async
-    def save_messages(self,room,messages):
+    def save_messages(self,room,messages:list[str]):
          for message in messages:
               self.save_message(room,message)
