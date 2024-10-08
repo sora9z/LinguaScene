@@ -89,9 +89,9 @@ class ChatRoom(models.Model):
         else:
             raise ValueError(f"Invalid level: {self.level}")                
 
-    def get_initial_messages(self)->List[GptMessage]:
+    def get_initial_setting(self)->dict:
         
-        context = {
+        initial_setting = {
             "gpt_name": "RolePlayingBot",
             "language": self.get_language_display(),
             "situation": self.situation_en or self.situation,
@@ -99,9 +99,9 @@ class ChatRoom(models.Model):
             "gpt_role": self.gpt_role_en or self.gpt_role,
             "level_string": self.get_level_string(),
             "level_word": self.get_level_word(),
+            "correction_instruction":""
         }
-        initial_messages = self.chat_chain.get_initial_messages(context)
-        return initial_messages
+        return initial_setting
 
     # TODO
     # def get_recommend_message(self)->str:
