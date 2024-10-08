@@ -71,25 +71,31 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     );
   }
 
-  void _addMessage(String message, String messageType) {
-    final messageRole = messageType == 'user-message'
-        ? MessageRole.user
-        : MessageRole.assistant;
+  void _addMessage(String content, String messageType) {
+    MessageRole messageRole;
+    if (messageType == 'request_user_message' ||
+        messageType == 'request_recommend_message') {
+      messageRole = MessageRole.user;
+    } else if (messageType == 'request_system_message') {
+      messageRole = MessageRole.system;
+    } else {
+      messageRole = MessageRole.assistant;
+    }
 
     Provider.of<ChatRoomProvider>(context, listen: false)
-        .addMessageToChatRoom(widget.chatRoom.id, message, messageRole);
+        .addMessageToChatRoom(widget.chatRoom.id, content, messageRole);
 
     Provider.of<ChatRoomProvider>(context, listen: false)
-        .updateLastMessage(widget.chatRoom.id, message);
+        .updateLastMessage(widget.chatRoom.id, content);
   }
 
   void _sendMessage() {
-    final message = _messageController.text.trim();
-    if (message.isNotEmpty) {
-      var messageType = 'user-message';
-      _addMessage(message, messageType);
+    final content = _messageController.text.trim();
+    if (content.isNotEmpty) {
+      var messageType = 'request_user_message';
+      _addMessage(content, messageType);
       _messageController.clear();
-      var userMessage = {'role': MessageRole.user.name, 'message': message};
+      var userMessage = {'role': MessageRole.user.name, 'content': content};
 
       _socketService.sendMessage(messageType, userMessage);
     }

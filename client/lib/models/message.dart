@@ -11,6 +11,20 @@ enum MessageRole {
   String toString() => name;
 }
 
+// enum MessageType {
+//   RequestUserMessage = 'request_user_message',
+//   RequestSystemMessage = 'request_system_message',
+//   RequestRecommendMessage = 'request_recommend_message',
+//   ResponseAssistantMessage = 'response_assistant_message';
+
+//   static MessageType fromString(String value) {
+//     return MessageType.values.firstWhere((type) => type.name.toLowerCase() == value);
+//   }
+
+//   @override
+//   String toString() => name.toLowerCase().replaceAll('request', 'request_').replaceAll('response', 'response_');
+// }
+
 class Message {
   final MessageRole role;
   final String message;

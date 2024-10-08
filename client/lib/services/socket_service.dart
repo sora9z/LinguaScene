@@ -27,7 +27,7 @@ class SocketService {
 
   void sendMessage(String type, Object content) {
     if (channel != null) {
-      final jsonMessage = jsonEncode({'type': type, 'content': content});
+      final jsonMessage = jsonEncode({'type': type, 'message': content});
       channel?.sink.add(jsonMessage);
       print("Sending message: $content");
     } else {
