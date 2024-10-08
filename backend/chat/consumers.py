@@ -75,7 +75,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
             await self.send_message(MessageType.RESPONSE_ASSISTANT_MESSAGE,response)
 
-            await self.save_messages(self.room, [initial_system_message.content,response.content])
+            await self.save_messages([initial_system_message,response])
             self._append_to_message_buffer(type=MessageType.REQUEST_SYSTEM_MESSAGE,message=initial_system_message)
             self._append_to_message_buffer(type=MessageType.RESPONSE_ASSISTANT_MESSAGE,message=response)
     
@@ -90,7 +90,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         await self.send_message(message=assistant_message)
 
         # 저장 밎 message_history update
-        await self.save_messages(self.room,[user_message,assistant_message])
+        await self.save_messages([user_message,assistant_message])
         self._append_to_message_buffer(type="assistant_message",message=assistant_message)
   
     # TODO recommended message 추가     
@@ -162,11 +162,22 @@ class ChatConsumer(AsyncWebsocketConsumer):
         return room.messages.count()        
     
     @database_sync_to_async
-    def save_message(self, room, content:str):
-        message = Message(chat_room=room, content=content)
-        message.save()
+    def save_message(self,message:GptMessage):
+        Message.object.create(chat_room=self.room,role=message.role,content=message.content)
 
     @database_sync_to_async
-    def save_messages(self,room,messages:list[str]):
+    def save_messages(self,room,messages:list[GptMessage]):
          for message in messages:
               self.save_message(room,message)
+    
+    @database_sync_to_async
+    def load_existing_message(self):
+        # Message 에서 현재 chat_room 기준으로 생성기준으로 정렬하여 가져온다
+        # message.role로 구분하여 user,system,assistant 로 message를 분류한다
+        messages = Message.objects.filter(chat_room=self.room).order_by('created_at')
+        for message in messages:
+             gpt_message = GptMessage(role=message.role,content=message.content)
+             if message.role=='user' or message.role == 'assistant':
+                  self.user_message.append(gpt_message)
+             elif message.role =='system':
+                  self.system_message.append(gpt_message)
