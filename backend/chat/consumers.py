@@ -67,18 +67,20 @@ class ChatConsumer(AsyncWebsocketConsumer):
             pass
     
     async def handle_initial_message(self):
-         if await self.get_message_count(self.room) == 0:
+        if await self.get_message_count(self.room) == 0:
             
             initial_setting = self.room.get_initial_setting()
             response_message = await self.openai_service.get_initial_response(initial_setting)
             initial_system_message, response = response_message['initial_message'], response_message['response']
 
-            await self.send_message(MessageType.RESPONSE_ASSISTANT_MESSAGE,response)
+            await self.send_message(response)
 
             await self.save_messages([initial_system_message,response])
             self._append_to_message_buffer(type=MessageType.REQUEST_SYSTEM_MESSAGE,message=initial_system_message)
             self._append_to_message_buffer(type=MessageType.RESPONSE_ASSISTANT_MESSAGE,message=response)
-    
+        else :
+             await self.load_existing_messages()
+              
     async def handle_user_message(self,text_data_json):
         content = text_data_json["message"]['content']
         message_type = text_data_json["type"]
@@ -163,21 +165,23 @@ class ChatConsumer(AsyncWebsocketConsumer):
     
     @database_sync_to_async
     def save_message(self,message:GptMessage):
-        Message.object.create(chat_room=self.room,role=message.role,content=message.content)
+        msg= Message.objects.create(chat_room=self.room,role=message['role'],content=message['content'])
+        msg.save()
 
-    @database_sync_to_async
-    def save_messages(self,room,messages:list[GptMessage]):
+    async def save_messages(self,messages:list[GptMessage]):
          for message in messages:
-              self.save_message(room,message)
+              await self.save_message(message)
     
     @database_sync_to_async
-    def load_existing_message(self):
+    def load_existing_messages(self):
         # Message 에서 현재 chat_room 기준으로 생성기준으로 정렬하여 가져온다
         # message.role로 구분하여 user,system,assistant 로 message를 분류한다
         messages = Message.objects.filter(chat_room=self.room).order_by('created_at')
+        self.user_message.clear()  # 기존 메시지 리스트 초기화
+        self.system_message.clear()  # 기존 메시지 리스트 초기화
         for message in messages:
              gpt_message = GptMessage(role=message.role,content=message.content)
-             if message.role=='user' or message.role == 'assistant':
+             if message.role in ['user','assistant']:
                   self.user_message.append(gpt_message)
              elif message.role =='system':
                   self.system_message.append(gpt_message)

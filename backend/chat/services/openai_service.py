@@ -13,14 +13,15 @@ class OpenAiService:
     
     async def get_initial_response(self,init_setting)->dict[GptMessage,GptMessage]:
         initial_message = self.chat_chain.get_initial_messages(init_setting)
-        response = self._get_response([initial_message])
+        initial_message_content = initial_message.content  
+        response = await self._get_response([initial_message])
         return {
-            'initial_message':GptMessage(role='system', content=initial_message.content),
+            'initial_message':GptMessage(role='system', content=initial_message_content),
             'response':response,
             }
         
     async def get_chat_response(self,messages:List[GptMessage]):
-        
+
         structured_messages = [
             self._convert_to_langchain_message(message) for message in messages
         ]

@@ -13,11 +13,15 @@ class ChatChain:
     def get_initial_messages(self, context: dict) -> SystemMessage:
         try:
             system_prompt = SYSTEM_PROMPT_TEMPLATE.format(**context)
-            return  SystemMessage(context=system_prompt),
+            return SystemMessage(content=system_prompt)
         except Exception as e:
             logger.error(f"[chat/service/openai] error : {e}")
-            return []
+            raise e
 
     def get_response(self, messages):
-        response = self.llm.invoke(messages)
-        return response
+        try:
+            response = self.llm.invoke(messages)
+            return response
+        except Exception as e:
+            logger.error(f"[chat/service/openai] error in get_response: {e}")
+            raise e
