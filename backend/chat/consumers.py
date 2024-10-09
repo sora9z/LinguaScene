@@ -29,7 +29,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
     def __init__(self,*ags,**kwargs):
           super().__init__(*ags,**kwargs)
           self.room = None
-          # TODO여기서 관리하는 것이 맞을까? 전체적으로 정리 후 고민해보기
           self.user_message: List[GptMessage] = [] 
           self.system_message:List[GptMessage] = [] 
 
