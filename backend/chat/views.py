@@ -33,6 +33,7 @@ class ChatRoomCreateAPIView(APIView):
             result = chat_room_create_service(data)
             return Response(result, status=status.HTTP_201_CREATED)
         except Exception as e:
+            print(f"[chat/views/post] error: {e}")
             # TODO exception 세분화 하기
             return Response(
                 {"detail": "Server error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -42,10 +43,11 @@ class ChatRoomCreateAPIView(APIView):
 class ChatRoomDeleteAPIView(APIView):
     def delete(self, request, room_id):
         try:
-            chat_room_delete_service(room_id)
+            chat_room_delete_service(room_id, request)
             return Response(status=status.HTTP_201_CREATED)
         except Exception as e:
             # TODO exception 세분화 하기
+            print(f"[chat/views/delete] error: {e}")
             return Response(
                 {"detail": "Server error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
