@@ -46,9 +46,8 @@ class ApiService {
   Future<Map<String, dynamic>> signup(
     String email,
     String password,
-    String phonNumber,
-    String firstNeme,
-    String lastName,
+    String phoneNumber,
+    String name,
   ) async {
     final response = await http.post(
       Uri.parse('$baseUrl/auth/signup/'),
@@ -56,16 +55,25 @@ class ApiService {
       body: jsonEncode({
         'email': email,
         'password': password,
-        'first_name': firstNeme,
-        'last_name': lastName,
-        'phone_number': phonNumber,
+        'phone_number': phoneNumber,
+        'name': name,
       }),
     );
 
     if (response.statusCode == 201) {
-      return jsonDecode(response.body);
+      if (response.body.isEmpty) {
+        return {'message': 'Signup successful'};
+      }
+      try {
+        return jsonDecode(response.body);
+      } catch (e) {
+        print('Error decoding response: ${response.body}');
+        return {
+          'message': 'Signup successful, but response format is unexpected'
+        };
+      }
     } else {
-      throw Exception('Failed to signup');
+      throw Exception('Failed to signup: ${response.body}');
     }
   }
 
@@ -82,17 +90,31 @@ class ApiService {
   }
 
   Future<ChatRoom> createChatRoom(Map<String, dynamic> chatRoomData) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/chat/create/'),
-      headers: await HttpHeaderBuilder.buildHeaders(),
-      body: jsonEncode(chatRoomData),
-    );
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/chat/create/'),
+        headers: await HttpHeaderBuilder.buildHeaders(),
+        body: jsonEncode(chatRoomData),
+      );
 
-    if (response.statusCode == 201) {
-      final data = ChatRoom.fromJson(jsonDecode(response.body));
-      return data;
-    } else {
-      throw Exception('Failed to create chat room');
+      if (response.statusCode == 201) {
+        if (response.body.isEmpty) {
+          throw Exception('서버에서 빈 응답을 반환했습니다.');
+        }
+        try {
+          final data = ChatRoom.fromJson(jsonDecode(response.body));
+          print('Created chat room: $data');
+          return data;
+        } catch (e) {
+          print('JSON 디코딩 오류: $e');
+          throw Exception('응답을 파싱하는 데 실패했습니다: $e');
+        }
+      } else {
+        throw Exception(
+            '채팅방 생성 실패. 상태 코드: ${response.statusCode}, 응답: ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('채팅방 생성 실패: $e');
     }
   }
 

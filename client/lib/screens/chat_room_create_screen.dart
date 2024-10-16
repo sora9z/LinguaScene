@@ -62,7 +62,20 @@ class _ChatRoomCreateScreenState extends State<ChatRoomCreateScreen> {
         ),
       );
     } catch (e) {
-      print('Failed to create new chat room: $e');
+      print('새 채팅방 생성 실패: $e');
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('오류'),
+          content: const Text('채팅방 생성 중 오류가 발생했습니다'),
+          actions: [
+            TextButton(
+              child: const Text('확인'),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ],
+        ),
+      );
     }
   }
 
