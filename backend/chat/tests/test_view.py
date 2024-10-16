@@ -5,113 +5,130 @@ from rest_framework import status
 
 from chat.models import ChatRoom
 
+
 class ChatViewTests(APITestCase):
     def setUp(self):
-        self.user = MagicMock(id=1, email='test@test.com', first_name='test', last_name='user', is_active=True)
+        self.user = MagicMock(
+            id=1,
+            email="test@test.com",
+            name="test",
+            phone_number="010-1234-5678",
+            is_active=True,
+        )
         self.client.force_authenticate(user=self.user)  # 인증된 사용자 설정
 
-    @patch('chat.views.chat_room_list_service')
-    def test_chat_room_list_view_success(self,MockingChatRoomListService):
+    @patch("chat.views.chat_room_list_service")
+    def test_chat_room_list_view_success(self, MockingChatRoomListService):
         mock_chat_room = {
-            'id': 1,
-            'title': 'Test Room 1',
-            'language': 'en-US',
-            'level': 1,
-            'situation': 'Ordering food',
-            'situation_en': 'Ordering food in a restaurant',
-            'my_role': 'Customer',
-            'my_role_en': 'Customer',
-            'gpt_role': 'Waiter',
-            'gpt_role_en': 'Waiter',
-            'last_message': 'This is the last message'
+            "id": 1,
+            "title": "Test Room 1",
+            "language": "en-US",
+            "level": 1,
+            "situation": "Ordering food",
+            "my_role": "Customer",
+            "gpt_role": "Waiter",
+            "last_message": "This is the last message",
         }
         MockingChatRoomListService.return_value = [mock_chat_room]
 
-        url = reverse('chatroom-list')
-        
-        response = self.client.get(url,)  
+        url = reverse("chatroom-list")
+
+        response = self.client.get(
+            url,
+        )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.json(),MockingChatRoomListService.return_value)
+        self.assertEqual(response.json(), MockingChatRoomListService.return_value)
         MockingChatRoomListService.assert_called_once_with(self.user)
 
-    @patch('chat.views.chat_room_list_service')
+    @patch("chat.views.chat_room_list_service")
     def test_chat_room_list_view_exception(self, MockingChatRoomListService):
         MockingChatRoomListService.side_effect = Exception("Something went wrong")
 
-        url = reverse('chatroom-list')
-        
-        response = self.client.get(url)  
-        
+        url = reverse("chatroom-list")
+
+        response = self.client.get(url)
+
         self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
         self.assertEqual(response.json(), {"detail": "Server error"})
         MockingChatRoomListService.assert_called_once_with(self.user)
 
-    @patch('chat.views.chat_room_create_service')
-    def test_chat_room_create_view_success(self,MockingChatRoomCreateService):
+    @patch("chat.views.chat_room_create_service")
+    def test_chat_room_create_view_success(self, MockingChatRoomCreateService):
 
         data = {
-            'title': '',
-            'language': 'en-US',
-            'level': ChatRoom.Level.BEGINNER,
-            'situation': 'Ordering food',
-            'my_role': 'Customer',
-            'gpt_role': 'Waiter',
+            "title": "Test Room 1",
+            "language": "en-US",
+            "level": ChatRoom.Level.BEGINNER,
+            "situation": "Ordering food",
+            "my_role": "Customer",
+            "gpt_role": "Waiter",
         }
 
-        url = reverse('chatroom-create')
+        mock_chat_room = {
+            "id": 1,
+            "title": "Test Room 1",
+            "language": "en-US",
+            "level": 1,
+            "situation": "Ordering food",
+            "my_role": "Customer",
+            "gpt_role": "Waiter",
+        }
 
-        response = self.client.post(url,data,format = 'json')
+        MockingChatRoomCreateService.return_value = mock_chat_room
 
-        self.assertEqual(response.status_code,status.HTTP_201_CREATED)
+        url = reverse("chatroom-create")
 
-        data['user']=self.user
+        response = self.client.post(url, data, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.json(), mock_chat_room)
+        data["user"] = self.user
         MockingChatRoomCreateService.assert_called_once_with(data)
 
-    @patch('chat.views.chat_room_create_service')
+    @patch("chat.views.chat_room_create_service")
     def test_chat_room_list_view_exception(self, MockingChatRoomCreateService):
         MockingChatRoomCreateService.side_effect = Exception("Something went wrong")
 
-        url = reverse('chatroom-create')
+        url = reverse("chatroom-create")
 
         data = {
-            'title': '',
-            'language': 'en-US',
-            'level': ChatRoom.Level.BEGINNER,
-            'situation': 'Ordering food',
-            'my_role': 'Customer',
-            'gpt_role': 'Waiter',
+            "title": "",
+            "language": "en-US",
+            "level": ChatRoom.Level.BEGINNER,
+            "situation": "Ordering food",
+            "my_role": "Customer",
+            "gpt_role": "Waiter",
         }
-        
-        response = self.client.post(url,data,format = 'json')
-        
+
+        response = self.client.post(url, data, format="json")
+
         self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
         self.assertEqual(response.json(), {"detail": "Server error"})
-        data['user']=self.user
+        data["user"] = self.user
         MockingChatRoomCreateService.assert_called_once_with(data)
-    
-    @patch('chat.views.chat_room_delete_service')
-    def test_chat_room_delete_view_success(self,MockingChatRoomDeleteService):
-        MockingChatRoomDeleteService.return_value = None # 아무 예외 없도록 설정
 
+    @patch("chat.views.chat_room_delete_service")
+    def test_chat_room_delete_view_success(self, MockingChatRoomDeleteService):
+        MockingChatRoomDeleteService.return_value = None  # 아무 예외 없도록 설정
 
-        url = reverse('chatroom-delete',kwargs={'room_id': 1})
+        url = reverse("chatroom-delete", kwargs={"room_id": 1})
 
         response = self.client.delete(url)
 
-        self.assertEqual(response.status_code,status.HTTP_201_CREATED)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         MockingChatRoomDeleteService.assert_called_once_with(1)
 
-    @patch('chat.views.chat_room_delete_service')
+    @patch("chat.views.chat_room_delete_service")
     def test_chat_room_delete_view_exception(self, MockingChatRoomDeleteService):
         MockingChatRoomDeleteService.side_effect = Exception("Unexpected error")
-        
-        url = reverse('chatroom-delete', kwargs={'room_id': 1})
-        
+
+        url = reverse("chatroom-delete", kwargs={"room_id": 1})
+
         response = self.client.delete(url)
 
         self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
         self.assertEqual(response.json(), {"detail": "Server error"})
-        MockingChatRoomDeleteService.assert_called_once_with(1)        
+        MockingChatRoomDeleteService.assert_called_once_with(1)

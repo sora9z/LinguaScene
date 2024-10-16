@@ -1,8 +1,3 @@
-# 연결 테스트 - connect, disconnect
-# 메시지 처리 테스트 - recieve, handle_initial_message, handle_user_message
-# 헬퍼 함수 테스트 - _append_to_message_buffer, send_message, send_error
-# 데이터베이스 상호작용 테스트 - save_message. get_room, load_existing_message
-# 얘외 추가하면서 테스트코드 같이 붙이기 
 
 # test data생성 및 setting
 from unittest.mock import AsyncMock, MagicMock,patch
