@@ -18,14 +18,15 @@ class ChatRoomProvider with ChangeNotifier {
     notifyListeners(); // 상태 변경 알림
   }
 
-  void addChatRoom(ChatRoom newChatRoom) {
-    _chatRooms.add(newChatRoom);
-    notifyListeners();
-  }
-
   void setChatRooms(List<ChatRoom> chatRooms) {
     _chatRooms.clear();
     _chatRooms.addAll(chatRooms);
+    notifyListeners();
+  }
+
+  void addChatRoom(ChatRoom newChatRoom) {
+    // _chatRooms.add(newChatRoom);
+    _chatRooms.insert(0, newChatRoom); // 새 채팅방을 리스트의 맨 앞에 추가
     notifyListeners();
   }
 
@@ -43,7 +44,7 @@ class ChatRoomProvider with ChangeNotifier {
   }
 
   void removeChatRoom(ChatRoom chatRoom) {
-    _chatRooms.remove(chatRoom);
+    _chatRooms.removeWhere((room) => room.id == chatRoom.id);
     notifyListeners();
   }
 }

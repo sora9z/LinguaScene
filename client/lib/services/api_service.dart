@@ -144,15 +144,19 @@ class ApiService {
   }
 
   Future<bool> deleteChatRoom(int chatRoomId) async {
-    final response = await http.delete(
-      Uri.parse('$baseUrl/chat/delete/$chatRoomId/'),
-      headers: await HttpHeaderBuilder.buildHeaders(),
-    );
+    try {
+      final response = await http.delete(
+        Uri.parse('$baseUrl/chat/delete/$chatRoomId/'),
+        headers: await HttpHeaderBuilder.buildHeaders(),
+      );
 
-    if (response.statusCode == 200) {
-      return true;
-    } else {
-      throw Exception('Failed to delete chat room');
+      if (response.statusCode == 201) {
+        return true;
+      } else {
+        throw Exception('Failed to delete chat room');
+      }
+    } catch (e) {
+      throw Exception('Failed to delete chat room: $e');
     }
   }
 }
