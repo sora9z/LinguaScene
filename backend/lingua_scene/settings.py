@@ -8,10 +8,10 @@ from datetime import timedelta
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Take environment variables from .env file
-environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
+environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
 
 #  set casting, default value
-env = environ.Env(DEBUG=(bool, True)) 
+env = environ.Env(DEBUG=(bool, True))
 
 
 # Quick-start development settings - unsuitable for production
@@ -21,21 +21,22 @@ env = environ.Env(DEBUG=(bool, True))
 SECRET_KEY = env("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = env('DEBUG')
+DEBUG = env("DEBUG")
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ["*"]
 
 # Application definition
 INSTALLED_APPS = [
-    "daphne", #  Daphne는 Django Channels와 함께 사용되는 ASGI 서버로, WebSocket 연결을 처리하는 데 필요
+    "daphne",  #  Daphne는 Django Channels와 함께 사용되는 ASGI 서버로, WebSocket 연결을 처리하는 데 필요
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    'rest_framework',
-    'rest_framework_simplejwt',
+    "rest_framework",
+    "rest_framework_simplejwt",
+    "phonenumber_field",
     "channels",
     "users",
     "chat",
@@ -85,7 +86,7 @@ DATABASES = {
         "NAME": env("DB_NAME"),
         "USER": env("DB_USER"),
         "PASSWORD": env("DB_PASSWORD"),
-        "HOST":env("DB_HOST"),
+        "HOST": env("DB_HOST"),
         "PORT": env("DB_PORT"),
     }
 }
@@ -133,46 +134,46 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # rest_framework settings
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-        'rest_framework.authentication.SessionAuthentication',
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "rest_framework.authentication.SessionAuthentication",
     ],
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.AllowAny',
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.AllowAny",
     ],
 }
 
 # JWT settings
 # https://django-rest-framework-simplejwt.readthedocs.io/en/latest/getting_started.html
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
-    'ROTATE_REFRESH_TOKENS': False,
-    'BLACKLIST_AFTER_ROTATION': True,
-    'ALGORITHM': 'HS256',
-    'SIGNING_KEY': SECRET_KEY,
-    'AUTH_HEADER_TYPES': ('Bearer',),
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+    "ROTATE_REFRESH_TOKENS": False,
+    "BLACKLIST_AFTER_ROTATION": True,
+    "ALGORITHM": "HS256",
+    "SIGNING_KEY": SECRET_KEY,
+    "AUTH_HEADER_TYPES": ("Bearer",),
 }
 
 # logging
 LOGGING = {
-     'version': 1,
-     'disable_existing_loggers': False,
-     'handlers': {
-         'console': {
-             'class': 'logging.StreamHandler',
-         },
-     },
-     'root': {
-         'handlers': ['console'],
-         'level': 'DEBUG',
-     },
- }
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "DEBUG",
+    },
+}
 
 
 AUTHENTICATION_BACKENDS = [
-    'users.backends.EmailBackend',
-    'django.contrib.auth.backends.ModelBackend',
+    "users.backends.EmailBackend",
+    "django.contrib.auth.backends.ModelBackend",
 ]
 
-AUTH_USER_MODEL = 'users.CustomUser'
+AUTH_USER_MODEL = "users.CustomUser"

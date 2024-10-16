@@ -1,15 +1,15 @@
+"""채팅 관련 시리얼라이저를 정의하는 모듈."""
 
 from rest_framework import serializers
-
 from .models import ChatRoom
 
 class ChatRoomListSerializer(serializers.ModelSerializer):
-    last_message = serializers.SerializerMethodField()  
-
+    """채팅방 목록을 위한 시리얼라이저."""
+    last_message = serializers.SerializerMethodField();
     class Meta:
         model = ChatRoom
         fields = [
-            'id','language', 'level', 'title','situation', 'situation_en', 'my_role', 'my_role_en', 'gpt_role', 'gpt_role_en', 'last_message'
+            'id','language', 'level', 'title','situation','my_role', 'gpt_role', 'last_message'
         ]
 
     def get_last_message(self, obj):
@@ -20,12 +20,12 @@ class ChatRoomCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = ChatRoom
         fields = [
-            'id','language', 'level', 'title','situation', 'situation_en', 'my_role', 'my_role_en', 'gpt_role', 'gpt_role_en'
+            'id','language', 'level', 'title','situation', 'my_role', 'gpt_role'
         ]
         extra_kwargs = {
-            'situation_en': {'required': False},
-            'my_role_en': {'required': False},
-            'gpt_role_en': {'required': False}
+            'situation': {'required': False},
+            'my_role': {'required': False},
+            'gpt_role': {'required': False}
         }
     
 class ChatRoomDeleteSerializer(serializers.Serializer):
