@@ -1,5 +1,4 @@
 import json
-from typing import List, Union
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async 
 
@@ -27,13 +26,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
     # 그 응답은 초기 프롬프트에 대한 응답이므로 get_message에 추가한 후 반환 role은 assistant
 
     def __init__(self,*ags,**kwargs):
-          super().__init__(*ags,**kwargs)
-          self.room = None
-          self.user_message: List[GptMessage] = [] 
-          self.system_message:List[GptMessage] = [] 
+        super().__init__(*ags,**kwargs)
+        self.room = None
+        self.user_message: list[GptMessage] = [] 
+        self.system_message:list[GptMessage] = [] 
 
-          self.recommend_message:str = ""
-          self.openai_service = OpenAiService()
+        self.recommend_message:str = ""
+        self.openai_service = OpenAiService()
 
     async def connect(self):
             self.room = await self.get_room()
