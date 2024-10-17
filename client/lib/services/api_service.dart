@@ -9,40 +9,6 @@ class ApiService {
   final String baseUrl = 'http://localhost:8000';
   final TokenManager tokenManager = TokenManager();
 
-  Future<Map<String, dynamic>> login(String email, String password) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/auth/login/'),
-      headers: await HttpHeaderBuilder.buildHeaders(includeToken: false),
-      body: jsonEncode({'email': email, 'password': password}),
-    );
-
-    if (response.statusCode == 200) {
-      var data = jsonDecode(response.body);
-      await tokenManager.saveTokens(data['accessToken'], data['refreshToken']);
-      return data;
-    } else {
-      throw Exception('Failed to login');
-    }
-  }
-
-  // 더미 데이터 생성을 위한 헬퍼 함수
-  List<ChatRoom> _generateDummyChatRooms() {
-    return List.generate(
-      5,
-      (index) => ChatRoom(
-        id: index + 1,
-        title: 'Chat Room ${index + 1}',
-        lastMessage:
-            'This is the last message in Chat Room ${index + 1}. It exceeds 100 characters.It exceeds 100 characters.It exceeds 100 characters.',
-        language: 'English',
-        level: 1,
-        situation: 'Booking a hotel on the phone',
-        myRole: 'Customer',
-        gptRole: 'Hotel staff',
-      ),
-    );
-  }
-
   Future<Map<String, dynamic>> signup(
     String email,
     String password,
@@ -77,16 +43,95 @@ class ApiService {
     }
   }
 
-  Future<List<ChatRoom>> getChatRooms() async {
-    final response = await http.get(Uri.parse('$baseUrl/chat/rooms/'),
-        headers: await HttpHeaderBuilder.buildHeaders());
+  Future<Map<String, dynamic>> login(String email, String password) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/auth/login/'),
+      headers: await HttpHeaderBuilder.buildHeaders(includeToken: false),
+      body: jsonEncode({'email': email, 'password': password}),
+    );
 
     if (response.statusCode == 200) {
-      final List<dynamic> data = jsonDecode(response.body);
-      return data.map((json) => ChatRoom.fromJson(json)).toList();
+      var data = jsonDecode(response.body);
+
+      await tokenManager.saveTokens(
+          data['accessToken'], data['refreshToken'], data['expiresIn']);
+      return data;
     } else {
-      throw Exception('Failed to load chat rooms');
+      throw Exception('Failed to login');
     }
+  }
+
+  // 더미 데이터 생성을 위한 헬퍼 함수
+  List<ChatRoom> _generateDummyChatRooms() {
+    return List.generate(
+      5,
+      (index) => ChatRoom(
+        id: index + 1,
+        title: 'Chat Room ${index + 1}',
+        lastMessage:
+            'This is the last message in Chat Room ${index + 1}. It exceeds 100 characters.It exceeds 100 characters.It exceeds 100 characters.',
+        language: 'English',
+        level: 1,
+        situation: 'Booking a hotel on the phone',
+        myRole: 'Customer',
+        gptRole: 'Hotel staff',
+      ),
+    );
+  }
+
+  Future<void> logout() async {
+    await tokenManager.clearTokens(); // 토큰 제거
+  }
+
+  Future<bool> refreshToken() async {
+    final refreshToken = await tokenManager.getRefreshToken();
+    if (refreshToken == null) return false;
+
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/refresh-token/'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'refreshToken': refreshToken}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        await tokenManager.saveTokens(
+            data['accessToken'], refreshToken, data['expiresIn']);
+        return true;
+      }
+    } catch (e) {
+      print('Token refresh failed: $e');
+    }
+    return false;
+  }
+
+  Future<dynamic> _secureCall(Future<http.Response> Function() apiCall) async {
+    if (await tokenManager.isTokenExpired()) {
+      final refreshSuccess = await refreshToken();
+      if (!refreshSuccess) {
+        throw Exception('Session expired. Please login again.');
+      }
+    }
+
+    final response = await apiCall();
+    if (response.statusCode == 401) {
+      final refreshSuccess = await refreshToken();
+      if (refreshSuccess) {
+        return _secureCall(apiCall);
+      } else {
+        throw Exception('Session expired. Please login again.');
+      }
+    }
+    return jsonDecode(response.body);
+  }
+
+  Future<List<ChatRoom>> getChatRooms() async {
+    return _secureCall(() async {
+      final headers = await HttpHeaderBuilder.buildHeaders();
+      return http.get(Uri.parse('$baseUrl/chat/rooms/'), headers: headers);
+    }).then((data) =>
+        (data as List).map((json) => ChatRoom.fromJson(json)).toList());
   }
 
   Future<ChatRoom> createChatRoom(Map<String, dynamic> chatRoomData) async {
@@ -119,28 +164,28 @@ class ApiService {
   }
 
   Future<List<Message>> fetchMessagesForChatRoom(int chatRoomId) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/message/messages/$chatRoomId/'),
-      headers: await HttpHeaderBuilder.buildHeaders(),
-    );
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/message/messages/$chatRoomId/'),
+        headers: await HttpHeaderBuilder.buildHeaders(),
+      );
 
-    if (response.statusCode == 200) {
-      final List<dynamic> data = jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
 
-      final result = data
-          .where((json) => json['role'] != MessageRole.system.name)
-          .map((json) => Message.fromJson(json))
-          .toList();
+        final result = data
+            .where((json) => json['role'] != MessageRole.system.name)
+            .map((json) => Message.fromJson(json))
+            .toList();
 
-      return result;
-    } else {
-      throw Exception('Failed to load messages');
+        return result;
+      } else {
+        throw Exception('[fetchMessagesForChatRoom]Failed to load messages');
+      }
+    } catch (e) {
+      print('Error in fetchMessagesForChatRoom: $e');
+      throw Exception('Failed to load messages: $e');
     }
-  }
-
-  Future<void> logout() async {
-    final tokenManager = TokenManager();
-    await tokenManager.clearTokens();
   }
 
   Future<bool> deleteChatRoom(int chatRoomId) async {

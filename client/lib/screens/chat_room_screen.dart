@@ -33,7 +33,6 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       if (widget.chatRoom.messages.isEmpty) {
         final messages =
             await _apiService.fetchMessagesForChatRoom(widget.chatRoom.id);
-
         if (mounted) {
           setState(() {
             Provider.of<ChatRoomProvider>(context, listen: false)
@@ -42,7 +41,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         }
       }
     } catch (e) {
-      print('Failed to load messages: $e');
+      print('[_initializeMessages]Failed to load messages: $e');
     }
   }
 

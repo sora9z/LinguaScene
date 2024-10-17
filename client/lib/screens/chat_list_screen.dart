@@ -6,6 +6,8 @@ import 'package:client/screens/login_screen.dart';
 import 'package:client/services/api_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'dart:async';
+import 'package:client/services/token_manager.dart';
 
 class ChatListScreen extends StatefulWidget {
   const ChatListScreen({super.key});
@@ -16,11 +18,67 @@ class ChatListScreen extends StatefulWidget {
 
 class _ChatListScreenState extends State<ChatListScreen> {
   final ApiService _apiService = ApiService();
+  final TokenManager _tokenManager = TokenManager();
+  Timer? _tokenCheckTimer;
 
   @override
   void initState() {
     super.initState();
     _loadChatRooms();
+    _startTokenCheck();
+  }
+
+  void _startTokenCheck() {
+    _tokenCheckTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
+      _checkTokenExpiration();
+    });
+  }
+
+  Future<void> _checkTokenExpiration() async {
+    if (await _tokenManager.isTokenExpiringSoon()) {
+      _showRefreshTokenDialog();
+    }
+  }
+
+  void _showRefreshTokenDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('로그인 세션 만료'),
+          content: const Text('로그인 세션이 곧 만료됩니다. 연장하시겠습니까?'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('취소'),
+              onPressed: () {
+                Navigator.of(context).pop();
+                _logout(); // 취소 시 로그아웃
+              },
+            ),
+            TextButton(
+              child: const Text('연장'),
+              onPressed: () async {
+                Navigator.of(context).pop();
+                final success = await _apiService.refreshToken();
+                if (success) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('로그인 세션이 연장되었습니다.')),
+                  );
+                } else {
+                  _handleSessionExpired();
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _tokenCheckTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadChatRooms() async {
@@ -29,8 +87,20 @@ class _ChatListScreenState extends State<ChatListScreen> {
       Provider.of<ChatRoomProvider>(context, listen: false)
           .setChatRooms(chatRooms);
     } catch (e) {
-      print('채팅방 목록을 불러오는데 실패했습니다: $e');
+      if (e.toString().contains('Session expired')) {
+        print('세션이 만료되었습니다: $e');
+        _handleSessionExpired();
+      } else {
+        print('채팅방 목록을 불러오는데 실패했습니다: $e');
+      }
     }
+  }
+
+  void _handleSessionExpired() {
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => const LoginScreen()),
+      (Route<dynamic> route) => false,
+    );
   }
 
   void _navigateToChatRoomScreen(ChatRoom chatRoom) {
@@ -51,10 +121,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
 
   void _logout() async {
     await _apiService.logout();
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (context) => const LoginScreen()),
-      (Route<dynamic> route) => false,
-    );
+    _handleSessionExpired(); // 로그아웃 후 로그인 화면으로 이동
   }
 
   @override
