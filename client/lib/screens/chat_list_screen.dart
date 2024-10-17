@@ -61,7 +61,8 @@ class _ChatListScreenState extends State<ChatListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('채팅 목록'),
+        title:
+            const Text('채팅 목록', style: TextStyle(fontWeight: FontWeight.bold)),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
@@ -71,8 +72,9 @@ class _ChatListScreenState extends State<ChatListScreen> {
       ),
       body: Consumer<ChatRoomProvider>(
         builder: (context, chatRoomProvider, child) {
-          return ListView.builder(
+          return ListView.separated(
             itemCount: chatRoomProvider.chatRooms.length,
+            separatorBuilder: (context, index) => const Divider(height: 1),
             itemBuilder: (context, index) {
               final chatRoom = chatRoomProvider.chatRooms[index];
               return Dismissible(
@@ -97,8 +99,55 @@ class _ChatListScreenState extends State<ChatListScreen> {
                   }
                 },
                 child: ListTile(
-                  title: Text(chatRoom.title ?? '제목 없음'),
-                  subtitle: Text(chatRoom.lastMessage ?? '메시지 없음'),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  leading: CircleAvatar(
+                    backgroundColor: Colors.blue,
+                    child: Text(
+                      chatRoom.title?[0] ?? '?',
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                  ),
+                  title: Text(
+                    chatRoom.title ?? '제목 없음',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 4),
+                      Text(
+                        chatRoom.lastMessage != null &&
+                                chatRoom.lastMessage!.length > 50
+                            ? '${chatRoom.lastMessage!.substring(0, 50)}...'
+                            : chatRoom.lastMessage ?? '메시지 없음',
+                        style: TextStyle(color: Colors.grey[600]),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(Icons.language,
+                              size: 16, color: Colors.blue[300]),
+                          const SizedBox(width: 4),
+                          Text(
+                            chatRoom.language ?? '언어 없음',
+                            style: TextStyle(
+                                color: Colors.blue[300], fontSize: 12),
+                          ),
+                          const SizedBox(width: 8),
+                          Icon(Icons.star, size: 16, color: Colors.amber[300]),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Level ${chatRoom.level ?? '?'}',
+                            style: TextStyle(
+                                color: Colors.amber[300], fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                   onTap: () => _navigateToChatRoomScreen(chatRoom),
                 ),
               );
@@ -108,6 +157,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _navigateToChatRoomCreateScreen,
+        backgroundColor: Colors.blue,
         child: const Icon(Icons.add),
       ),
     );

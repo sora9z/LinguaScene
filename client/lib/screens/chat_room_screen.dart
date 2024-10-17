@@ -112,7 +112,16 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.chatRoom.title ?? ''),
+        title: Column(
+          children: [
+            Text(widget.chatRoom.title ?? ''),
+            Text(
+              '${widget.chatRoom.language ?? '언어 없음'} - Level ${widget.chatRoom.level ?? '레벨 없음'}',
+              style:
+                  const TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
+            )
+          ],
+        ),
         backgroundColor: Colors.green,
       ),
       body: SafeArea(
