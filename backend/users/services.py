@@ -1,11 +1,10 @@
 import logging
 
-from django.db import IntegrityError
 from rest_framework.exceptions import AuthenticationFailed
 from libs.error.custom_exceptions import ValidationError
 
 from .serializers import LoginSerializer, SignupSerializer
-from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 
 
 logger = logging.getLogger(__name__)
@@ -42,9 +41,11 @@ def login_service(data):
             refresh["email"] = user.email
 
             logger.info(f"User logged in successfully: {user.email}")
+            # accessToken 만료시간 확인
             return {
                 "refreshToken": str(refresh),
                 "accessToken": str(refresh.access_token),
+                "expiresIn": int(refresh.access_token.payload["exp"]),
             }
         else:
             logger.warning(f"Login failed for data: {data}")
@@ -54,4 +55,27 @@ def login_service(data):
         raise af
     except Exception as e:
         logger.error(f"[user/service/login] Unexpected error: {str(e)}")
+        raise e
+
+
+def refresh_token_service(data):
+    try:
+        refresh_token = data.get("refreshToken")
+        if not refresh_token:
+            raise AuthenticationFailed("Refresh token is required.")
+
+        refresh = RefreshToken(refresh_token)
+        access_token = str(refresh.access_token)
+        expires_in = int(refresh.access_token.payload["exp"])
+        logger.info(f"Token refreshed successfully")
+
+        return {
+            "accessToken": access_token,
+            "expiresIn": expires_in,
+        }
+    except TokenError as te:
+        logger.warning(f"Token error during refresh: {str(te)}")
+        raise te
+    except Exception as e:
+        logger.error(f"[user/service/refresh_token] Unexpected error: {str(e)}")
         raise e

@@ -7,7 +7,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .services import login_service, signup_service
+from .services import login_service, refresh_token_service, signup_service
 
 
 logger = logging.getLogger(__name__)
@@ -46,6 +46,22 @@ class LoginView(APIView):
             return Response({"detail": str(af)}, status=status.HTTP_401_UNAUTHORIZED)
         except Exception as e:
             logger.error(f"[LoginView] Unexpected error: {str(e)}")
+            return Response(
+                {"detail": "An unexpected error occurred."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+
+class RefreshTokenView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        try:
+            result = refresh_token_service(request.data)
+            print(result)
+            return Response(result, status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error(f"[RefreshTokenView] Unexpected error: {str(e)}")
             return Response(
                 {"detail": "An unexpected error occurred."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
